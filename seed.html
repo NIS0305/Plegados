@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Seed — Plegados</title>
+  <style>
+    body { font-family: sans-serif; background: #09090b; color: #f4f4f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .box { background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 32px 40px; max-width: 480px; width: 100%; text-align: center; }
+    h2 { margin-bottom: 8px; }
+    p  { color: #a1a1aa; font-size: 14px; margin-bottom: 24px; }
+    button { background: #3b82f6; color: #fff; border: none; border-radius: 8px; padding: 12px 28px; font-size: 15px; cursor: pointer; margin: 6px; }
+    button:hover { background: #2563eb; }
+    .danger { background: #ef4444; }
+    .danger:hover { background: #dc2626; }
+    #log { margin-top: 20px; text-align: left; font-size: 13px; color: #a1a1aa; line-height: 1.7; }
+    .ok  { color: #4ade80; }
+    .err { color: #f87171; }
+  </style>
+</head>
+<body>
+<div class="box">
+  <h2>🌱 Datos de prueba</h2>
+  <p>Inserta usuarios y pedidos de prueba en localStorage para testear la app.</p>
+  <button onclick="seed()">Insertar datos de prueba</button>
+  <button class="danger" onclick="clear()">Borrar todo</button>
+  <div id="log"></div>
+</div>
+
+<script>
+async function hashPassword(password) {
+  const data = new TextEncoder().encode(password + '_plegado_chapa_v1');
+  const buf  = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function log(msg, type = 'ok') {
+  const el = document.getElementById('log');
+  el.innerHTML += `<div class="${type}">${msg}</div>`;
+}
+
+async function seed() {
+  document.getElementById('log').innerHTML = '';
+  try {
+
+  // ── Usuarios ──────────────────────────────────────────────────────
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    log('❌ crypto.subtle no disponible en este contexto. Prueba con un servidor local (localhost).', 'err');
+    return;
+  }
+  const adminHash    = await hashPassword('admin123');
+  const montador1Hash = await hashPassword('pass123');
+  const montador2Hash = await hashPassword('pass123');
+
+  const users = [
+    { id: 1700000001000, nombre: 'Admin',        email: 'admin@plegados.com',    passwordHash: adminHash,     role: 'admin',    creadoEl: '01/01/2025' },
+    { id: 1700000002000, nombre: 'Carlos Ruiz',  email: 'carlos@plegados.com',   passwordHash: montador1Hash, role: 'montador', creadoEl: '01/01/2025' },
+    { id: 1700000003000, nombre: 'María López',  email: 'maria@plegados.com',    passwordHash: montador2Hash, role: 'montador', creadoEl: '01/01/2025' },
+  ];
+
+  const existing = JSON.parse(localStorage.getItem('users') || '[]');
+  const merged = [...existing];
+  users.forEach(u => {
+    if (!merged.find(e => e.email === u.email)) merged.push(u);
+  });
+  localStorage.setItem('users', JSON.stringify(merged));
+  log(`✓ ${users.length} usuarios creados (o ya existían)`);
+
+  // ── Pedidos ───────────────────────────────────────────────────────
+  const estados  = ['Pendiente', 'Completado', 'En taller', 'Entregado a montador', 'Entregado a reparto'];
+  const materiales = ['Acero inoxidable', 'Acero galvanizado', 'Aluminio', 'Hierro', 'Cobre'];
+  const montadores = [
+    { id: 1700000002000, nombre: 'Carlos Ruiz' },
+    { id: 1700000003000, nombre: 'María López' },
+  ];
+
+  const pedidosData = [
+    { largo:1200, ancho:400,  espesor:1.5, angulo:90,  cantidad:5,  material:'Acero inoxidable', referencia:'REF-001', ral:'',        notas:'Acabado espejo',          estado:'Pendiente' },
+    { largo:800,  ancho:300,  espesor:2,   angulo:45,  cantidad:10, material:'Aluminio',          referencia:'REF-002', ral:'RAL 9005', notas:'',                        estado:'En taller' },
+    { largo:600,  ancho:200,  espesor:1,   angulo:90,  cantidad:20, material:'Acero galvanizado', referencia:'REF-003', ral:'',        notas:'Tolerancia ±0.5mm',       estado:'Completado' },
+    { largo:1500, ancho:500,  espesor:3,   angulo:135, cantidad:2,  material:'Hierro',            referencia:'REF-004', ral:'RAL 7016', notas:'Tratamiento anticorrosión',estado:'Entregado a montador' },
+    { largo:950,  ancho:350,  espesor:1.5, angulo:90,  cantidad:8,  material:'Aluminio',          referencia:'REF-005', ral:'',        notas:'',                        estado:'Entregado a reparto' },
+    { largo:400,  ancho:150,  espesor:0.8, angulo:90,  cantidad:50, material:'Acero inoxidable', referencia:'REF-006', ral:'',        notas:'Lote urgente',             estado:'Pendiente' },
+    { largo:700,  ancho:250,  espesor:2,   angulo:60,  cantidad:15, material:'Cobre',             referencia:'REF-007', ral:'',        notas:'',                        estado:'Completado' },
+    { largo:1100, ancho:420,  espesor:2.5, angulo:90,  cantidad:4,  material:'Acero galvanizado', referencia:'REF-008', ral:'RAL 9010',notas:'Pintura en polvo',         estado:'En taller' },
+    { largo:550,  ancho:180,  espesor:1,   angulo:90,  cantidad:30, material:'Aluminio',          referencia:'REF-009', ral:'',        notas:'',                        estado:'Pendiente' },
+    { largo:2000, ancho:600,  espesor:4,   angulo:90,  cantidad:1,  material:'Hierro',            referencia:'REF-010', ral:'RAL 7040', notas:'Pieza estructural',       estado:'Entregado a reparto' },
+    { largo:300,  ancho:100,  espesor:0.5, angulo:180, cantidad:100,material:'Acero inoxidable', referencia:'REF-011', ral:'',        notas:'Micro-piezas',             estado:'Completado' },
+    { largo:880,  ancho:320,  espesor:1.5, angulo:90,  cantidad:7,  material:'Aluminio',          referencia:'REF-012', ral:'RAL 6005', notas:'Color verde oscuro',      estado:'En taller' },
+  ];
+
+  const now = Date.now();
+  const pedidos = pedidosData.map((d, i) => {
+    const m = montadores[i % 2];
+    const date = new Date(now - (i * 2 * 24 * 60 * 60 * 1000));
+    const fecha = date.toLocaleString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    return {
+      id: now - i * 1000000,
+      userId: m.id,
+      montador: m.nombre,
+      fecha,
+      largo:    String(d.largo),
+      ancho:    String(d.ancho),
+      espesor:  String(d.espesor),
+      angulo:   d.angulo ? String(d.angulo) : '',
+      material: d.material,
+      cantidad: String(d.cantidad),
+      referencia: d.referencia,
+      ral:      d.ral,
+      notas:    d.notas,
+      fileData: null, fileName: null, fileType: null,
+      estado:   d.estado,
+    };
+  });
+
+  const existingPedidos = JSON.parse(localStorage.getItem('pedidos') || '[]');
+  localStorage.setItem('pedidos', JSON.stringify([...pedidos, ...existingPedidos]));
+
+  // Verificar que se guardó
+  const savedUsers   = JSON.parse(localStorage.getItem('users')   || '[]');
+  const savedPedidos = JSON.parse(localStorage.getItem('pedidos') || '[]');
+  log(`✓ Usuarios en localStorage: ${savedUsers.length}`);
+  log(`✓ Pedidos en localStorage: ${savedPedidos.length}`);
+
+  log('');
+  log('─────────────────────────────');
+  log('Credenciales de acceso:');
+  log('👤 admin@plegados.com  /  admin123  (Admin)');
+  log('👤 carlos@plegados.com /  pass123   (Montador)');
+  log('👤 maria@plegados.com  /  pass123   (Montador)');
+  log('');
+  log('<a href="login.html" style="color:#3b82f6">→ Ir al login</a>');
+
+  } catch(err) {
+    log('❌ Error: ' + err.message, 'err');
+    console.error(err);
+  }
+}
+
+function clear() {
+  localStorage.removeItem('pedidos');
+  localStorage.removeItem('users');
+  document.getElementById('log').innerHTML = '<div class="ok">✓ localStorage limpiado</div>';
+}
+</script>
+</body>
+</html>
