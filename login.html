@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acceder — Plegados</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-body">
+
+  <div class="auth-wrapper">
+    <div class="auth-brand">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="margin-bottom:4px"><path d="M4 4h7l5 5v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><polyline points="11 4 11 10 17 10"/><line x1="7" y1="15" x2="13" y2="15"/><line x1="7" y1="18" x2="11" y2="18"/></svg>
+      <h1>Plegados</h1>
+      <p>Gestión de pedidos de plegado</p>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
+        <button class="auth-tab" data-tab="register">Crear cuenta</button>
+      </div>
+
+      <!-- LOGIN -->
+      <form id="loginForm" class="auth-form active" novalidate>
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" placeholder="tu@email.com" required />
+          <span class="error-msg" id="err-loginEmail"></span>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Contraseña</label>
+          <div class="pass-wrap">
+            <input type="password" id="loginPassword" placeholder="••••••••" required />
+            <button type="button" class="toggle-pass" data-target="loginPassword">👁</button>
+          </div>
+          <span class="error-msg" id="err-loginPassword"></span>
+        </div>
+        <div class="error-msg form-error" id="loginError"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="loginBtn">Entrar</button>
+        <p class="auth-hint">¿No tienes cuenta? <button type="button" class="link-btn" data-switch="register">Regístrate gratis</button></p>
+      </form>
+
+      <!-- REGISTER -->
+      <form id="registerForm" class="auth-form" novalidate>
+        <div class="form-group">
+          <label for="regNombre">Nombre completo</label>
+          <input type="text" id="regNombre" placeholder="Ej: Juan García" required />
+          <span class="error-msg" id="err-regNombre"></span>
+        </div>
+        <div class="form-group">
+          <label for="regEmail">Email</label>
+          <input type="email" id="regEmail" placeholder="tu@email.com" required />
+          <span class="error-msg" id="err-regEmail"></span>
+        </div>
+        <div class="form-group">
+          <label for="regPassword">Contraseña</label>
+          <div class="pass-wrap">
+            <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" required minlength="6" />
+            <button type="button" class="toggle-pass" data-target="regPassword">👁</button>
+          </div>
+          <span class="error-msg" id="err-regPassword"></span>
+        </div>
+        <div class="form-group">
+          <label for="regPassword2">Confirmar contraseña</label>
+          <div class="pass-wrap">
+            <input type="password" id="regPassword2" placeholder="Repite tu contraseña" required />
+            <button type="button" class="toggle-pass" data-target="regPassword2">👁</button>
+          </div>
+          <span class="error-msg" id="err-regPassword2"></span>
+        </div>
+        <div class="form-group">
+          <label for="regAdminCode">Código de administrador <span style="color:var(--text-muted);font-weight:400">(opcional)</span></label>
+          <input type="text" id="regAdminCode" placeholder="Solo si eres administrador" />
+          <span class="error-msg" id="err-regAdminCode"></span>
+        </div>
+        <div class="error-msg form-error" id="registerError"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="registerBtn">Crear cuenta</button>
+        <p class="auth-hint">¿Ya tienes cuenta? <button type="button" class="link-btn" data-switch="login">Inicia sesión</button></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    // Redirect if already logged in
+    if (getCurrentUser()) window.location.href = 'index.html';
+
+    const tabs   = document.querySelectorAll('.auth-tab');
+    const forms  = document.querySelectorAll('.auth-form');
+
+    function switchTab(name) {
+      tabs.forEach(t  => t.classList.toggle('active', t.dataset.tab === name));
+      forms.forEach(f => f.classList.toggle('active', f.id === name + 'Form'));
+    }
+
+    tabs.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+    document.querySelectorAll('[data-switch]').forEach(b =>
+      b.addEventListener('click', () => switchTab(b.dataset.switch)));
+
+    document.querySelectorAll('.toggle-pass').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const inp = document.getElementById(btn.dataset.target);
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+      });
+    });
+
+    // LOGIN
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const pass  = document.getElementById('loginPassword').value;
+      const errEl = document.getElementById('loginError');
+      const btn   = document.getElementById('loginBtn');
+
+      if (!email) { document.getElementById('err-loginEmail').textContent = 'Ingresa tu email'; return; }
+      if (!pass)  { document.getElementById('err-loginPassword').textContent = 'Ingresa tu contraseña'; return; }
+
+      btn.disabled = true; btn.textContent = 'Verificando...';
+      errEl.textContent = '';
+      try {
+        const user = await loginUser(email, pass);
+        setCurrentUser(user);
+        window.location.href = user.role === 'admin' ? 'dashboard.html' : 'index.html';
+      } catch (err) {
+        errEl.textContent = err.message;
+        btn.disabled = false; btn.textContent = 'Entrar';
+      }
+    });
+
+    // REGISTER
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombre     = document.getElementById('regNombre').value.trim();
+      const email      = document.getElementById('regEmail').value.trim();
+      const pass       = document.getElementById('regPassword').value;
+      const pass2      = document.getElementById('regPassword2').value;
+      const adminCode  = document.getElementById('regAdminCode').value.trim();
+      const errEl      = document.getElementById('registerError');
+      const btn        = document.getElementById('registerBtn');
+      let ok = true;
+
+      const clear  = id => document.getElementById(id).textContent = '';
+      const setErr = (id, msg) => { document.getElementById(id).textContent = msg; ok = false; };
+
+      ['err-regNombre','err-regEmail','err-regPassword','err-regPassword2','err-regAdminCode'].forEach(clear);
+      errEl.textContent = '';
+
+      if (!nombre) setErr('err-regNombre', 'Ingresa tu nombre');
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) setErr('err-regEmail', 'Ingresa un email válido');
+      if (pass.length < 6) setErr('err-regPassword', 'Mínimo 6 caracteres');
+      if (pass !== pass2) setErr('err-regPassword2', 'Las contraseñas no coinciden');
+      if (!ok) return;
+
+      btn.disabled = true; btn.textContent = 'Creando cuenta...';
+      try {
+        const user = await registerUser(nombre, email, pass, adminCode);
+        setCurrentUser(user);
+        window.location.href = user.role === 'admin' ? 'dashboard.html' : 'index.html';
+      } catch (err) {
+        errEl.textContent = err.message;
+        btn.disabled = false; btn.textContent = 'Crear cuenta';
+      }
+    });
+
+    ['loginEmail','loginPassword'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        document.getElementById('err-' + id).textContent = '';
+      });
+    });
+  </script>
+</body>
+</html>
