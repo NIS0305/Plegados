@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Plegados</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path d="M4 4h7l5 5v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><polyline points="11 4 11 10 17 10"/><line x1="7" y1="15" x2="13" y2="15"/><line x1="7" y1="18" x2="11" y2="18"/></svg> Plegados</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">Nuevo Pedido</a>
+      <a href="dashboard.html" class="nav-link active">Dashboard</a>
+    </div>
+    <div class="nav-user" id="navUserArea"></div>
+  </nav>
+
+  <!-- Diagnóstico visible -->
+  <div id="diagBar" style="display:none;background:#2d1f00;border-bottom:1px solid #78350f;padding:8px 24px;font-size:13px;color:#fbbf24">
+    ⚠️ <strong>Diagnóstico:</strong> pedidos en localStorage: <strong id="diagCount">?</strong> &nbsp;|&nbsp; usuario: <strong id="diagUser">?</strong> &nbsp;|&nbsp; rol: <strong id="diagRole">?</strong>
+    <button onclick="document.getElementById('diagBar').style.display='none'" style="margin-left:16px;background:none;border:none;cursor:pointer;font-size:14px">✕</button>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="bi-filterbar">
+    <div class="bi-filters-row">
+      <div class="bi-filter-item">
+        <label class="bi-filter-label">Montador</label>
+        <select id="fMontador" class="bi-select"><option value="">Todos</option></select>
+      </div>
+      <div class="bi-filter-item">
+        <label class="bi-filter-label">Estado</label>
+        <select id="fEstado" class="bi-select">
+          <option value="">Todos</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="Completado">Completado</option>
+          <option value="En taller">En taller</option>
+          <option value="Entregado a montador">Entregado a montador</option>
+          <option value="Entregado a reparto">Entregado a reparto</option>
+        </select>
+      </div>
+      <div class="bi-filter-item">
+        <label class="bi-filter-label">Material</label>
+        <select id="fMaterial" class="bi-select"><option value="">Todos</option></select>
+      </div>
+      <div class="bi-filter-item">
+        <label class="bi-filter-label">Desde</label>
+        <input type="date" id="fDesde" class="bi-date" />
+      </div>
+      <div class="bi-filter-item">
+        <label class="bi-filter-label">Hasta</label>
+        <input type="date" id="fHasta" class="bi-date" />
+      </div>
+      <button class="btn btn-secondary btn-sm" id="fReset">↺ Limpiar</button>
+      <button class="btn btn-secondary btn-sm" id="refreshBtn">⟳ Actualizar</button>
+    </div>
+    <div class="active-chips" id="activeChips"></div>
+  </div>
+
+  <main class="bi-container">
+
+    <!-- KPI row principal -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <span class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"/></svg>
+        </span>
+        <div class="kpi-body">
+          <span class="kpi-num" id="kpiTotalNum">0</span>
+          <span class="kpi-label">Total pedidos</span>
+        </div>
+      </div>
+      <div class="kpi-card kpi-yellow">
+        <span class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+        <div class="kpi-body">
+          <span class="kpi-num" id="kpiPendienteNum">0</span>
+          <span class="kpi-label">Pendientes</span>
+          <span class="kpi-pct" id="kpiPendientePct"></span>
+        </div>
+      </div>
+      <div class="kpi-card kpi-green">
+        <span class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </span>
+        <div class="kpi-body">
+          <span class="kpi-num" id="kpiCompletadoNum">0</span>
+          <span class="kpi-label">Completados</span>
+          <span class="kpi-pct" id="kpiCompletadoPct"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI row entrega -->
+    <div class="kpi-row">
+      <div class="kpi-card kpi-indigo">
+        <span class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </span>
+        <div class="kpi-body">
+          <span class="kpi-num" id="kpiTallerNum">0</span>
+          <span class="kpi-label">En taller</span>
+          <span class="kpi-pct" id="kpiTallerPct"></span>
+        </div>
+      </div>
+      <div class="kpi-card kpi-teal">
+        <span class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </span>
+        <div class="kpi-body">
+          <span class="kpi-num" id="kpiEntMontadorNum">0</span>
+          <span class="kpi-label">Entregado a montador</span>
+          <span class="kpi-pct" id="kpiEntMontadorPct"></span>
+        </div>
+      </div>
+      <div class="kpi-card kpi-emerald">
+        <span class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </span>
+        <div class="kpi-body">
+          <span class="kpi-num" id="kpiEntClienteNum">0</span>
+          <span class="kpi-label">Entregado a reparto</span>
+          <span class="kpi-pct" id="kpiEntClientePct"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts 2x2 -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Pedidos por Estado</h3>
+          <span class="chart-hint">Clic para filtrar</span>
+        </div>
+        <div class="chart-wrap chart-wrap-sm">
+          <canvas id="chartEstado"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Pedidos por Montador</h3>
+          <span class="chart-hint">Clic para filtrar</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartMontador"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Pedidos por Material</h3>
+          <span class="chart-hint">Clic para filtrar</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartMaterial"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Evolución Temporal</h3>
+          <span class="chart-hint">Últimos 30 días</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartTimeline"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-topbar">
+        <div>
+          <h3 class="chart-title" style="margin:0">Detalle de Pedidos</h3>
+          <span class="table-count" id="tableCount"></span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="tableSearch" class="search-input" style="width:220px;margin:0" placeholder="Buscar..."/>
+          <button class="btn btn-secondary btn-sm" id="exportCsv">⬇ CSV</button>
+          <button class="btn btn-danger btn-sm" id="clearAllBtn">🗑 Borrar todos</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="bi-table" id="ordersTable">
+          <thead>
+            <tr>
+              <th class="sortable" data-col="id">#</th>
+              <th class="sortable" data-col="montador">Montador</th>
+              <th class="sortable" data-col="fecha">Fecha</th>
+              <th>Medidas</th>
+              <th class="sortable" data-col="material">Material</th>
+              <th class="sortable" data-col="referencia">Referencia</th>
+              <th class="sortable" data-col="ral">RAL</th>
+              <th class="sortable" data-col="cantidad">Cant.</th>
+              <th class="sortable" data-col="estado">Estado</th>
+              <th>Dibujo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal detalle -->
+  <div class="modal-overlay" id="modalOverlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Detalle del Pedido</h2>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="chart.umd.min.js"></script>
+  <script src="auth.js"></script>
+  <script src="app.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>
