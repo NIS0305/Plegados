@@ -31,7 +31,7 @@ const ESTADOS = ['Pendiente', 'Completado', 'En taller', 'Entregado a montador',
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const state = {
-  montador: '', estado: '', material: '',
+  montador: '', estado: '',
   desde: '', hasta: '',
   chartFilter: { type: '', value: '' },
   sort: { col: 'id', dir: 'desc' },
@@ -59,14 +59,12 @@ function getFiltered() {
   let list = getPedidos();
   if (state.montador) list = list.filter(p => p.montador === state.montador);
   if (state.estado)   list = list.filter(p => p.estado   === state.estado);
-  if (state.material) list = list.filter(p => p.material === state.material);
   if (state.desde)    list = list.filter(p => parseFecha(p.fecha) >= new Date(state.desde));
   if (state.hasta)    list = list.filter(p => parseFecha(p.fecha) <= new Date(state.hasta + 'T23:59:59'));
   if (state.chartFilter.value) {
     const { type, value } = state.chartFilter;
     if (type === 'estado')   list = list.filter(p => p.estado   === value);
     if (type === 'montador') list = list.filter(p => p.montador === value);
-    if (type === 'material') list = list.filter(p => p.material === value);
   }
   if (state.search) {
     const q = state.search.toLowerCase();
@@ -74,7 +72,6 @@ function getFiltered() {
       (p.montador   || '').toLowerCase().includes(q) ||
       (p.referencia || '').toLowerCase().includes(q) ||
       (p.ral        || '').toLowerCase().includes(q) ||
-      (p.material   || '').toLowerCase().includes(q) ||
       String(p.id).includes(q)
     );
   }
@@ -143,55 +140,6 @@ function initCharts() {
     },
   });
 
-  // Horizontal bar - Montador
-  charts.montador = new Chart(document.getElementById('chartMontador'), {
-    type: 'bar',
-    data: { labels: [], datasets: [{ data: [], backgroundColor: COLORS.multi[0] + 'cc', borderRadius: 4 }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      indexAxis: 'y',
-      plugins: { tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x} pedidos` } } },
-      scales: {
-        x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
-        y: { grid: { display: false } },
-      },
-      onClick: (e, els) => {
-        if (!els.length) { state.chartFilter = { type: '', value: '' }; renderAll(); return; }
-        const label = charts.montador.data.labels[els[0].index];
-        if (state.chartFilter.type === 'montador' && state.chartFilter.value === label) {
-          state.chartFilter = { type: '', value: '' };
-        } else {
-          state.chartFilter = { type: 'montador', value: label };
-        }
-        renderAll();
-      },
-    },
-  });
-
-  // Bar - Material
-  charts.material = new Chart(document.getElementById('chartMaterial'), {
-    type: 'bar',
-    data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderRadius: 4 }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y} pedidos` } } },
-      scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
-      },
-      onClick: (e, els) => {
-        if (!els.length) { state.chartFilter = { type: '', value: '' }; renderAll(); return; }
-        const label = charts.material.data.labels[els[0].index];
-        if (state.chartFilter.type === 'material' && state.chartFilter.value === label) {
-          state.chartFilter = { type: '', value: '' };
-        } else {
-          state.chartFilter = { type: 'material', value: label };
-        }
-        renderAll();
-      },
-    },
-  });
-
   // Line - Timeline (last 30 days)
   charts.timeline = new Chart(document.getElementById('chartTimeline'), {
     type: 'line',
@@ -224,21 +172,6 @@ function updateCharts(list) {
   charts.estado.data.datasets[0].backgroundColor = estadoLabels.map(k => COLORS[k]);
   charts.estado.update();
 
-  // Montador bar
-  const byMontador = countBy(list, 'montador');
-  const montadorEntries = Object.entries(byMontador).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  charts.montador.data.labels = montadorEntries.map(e => e[0]);
-  charts.montador.data.datasets[0].data = montadorEntries.map(e => e[1]);
-  charts.montador.data.datasets[0].backgroundColor = montadorEntries.map((_, i) => COLORS.multi[i % COLORS.multi.length] + 'cc');
-  charts.montador.update();
-
-  // Material bar
-  const byMaterial = countBy(list, 'material');
-  const matEntries = Object.entries(byMaterial).sort((a, b) => b[1] - a[1]);
-  charts.material.data.labels = matEntries.map(e => e[0]);
-  charts.material.data.datasets[0].data = matEntries.map(e => e[1]);
-  charts.material.data.datasets[0].backgroundColor = matEntries.map((_, i) => COLORS.multi[i % COLORS.multi.length] + 'cc');
-  charts.material.update();
 
   // Timeline - last 30 days
   const today = new Date(); today.setHours(23, 59, 59, 999);
@@ -267,7 +200,6 @@ function renderChips() {
   const chips = [];
   if (state.montador)             chips.push({ label: `Montador: ${state.montador}`,   clear: () => { state.montador = ''; document.getElementById('fMontador').value = ''; } });
   if (state.estado)               chips.push({ label: `Estado: ${state.estado}`,       clear: () => { state.estado   = ''; document.getElementById('fEstado').value   = ''; } });
-  if (state.material)             chips.push({ label: `Material: ${state.material}`,   clear: () => { state.material = ''; document.getElementById('fMaterial').value = ''; } });
   if (state.desde)                chips.push({ label: `Desde: ${state.desde}`,         clear: () => { state.desde    = ''; document.getElementById('fDesde').value    = ''; } });
   if (state.hasta)                chips.push({ label: `Hasta: ${state.hasta}`,         clear: () => { state.hasta    = ''; document.getElementById('fHasta').value    = ''; } });
   if (state.chartFilter.value)    chips.push({ label: `Gráfica: ${state.chartFilter.value}`, clear: () => { state.chartFilter = { type: '', value: '' }; } });
@@ -300,7 +232,7 @@ function renderTable(list) {
 
   const tbody = document.getElementById('tableBody');
   if (!sorted.length) {
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text-muted)">No hay pedidos con los filtros seleccionados</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">No hay pedidos con los filtros seleccionados</td></tr>`;
     return;
   }
 
@@ -315,11 +247,6 @@ function renderTable(list) {
       <td class="td-id">#${p.id}</td>
       <td><strong>${escHtml(p.montador)}</strong></td>
       <td class="td-sm">${escHtml(p.fecha)}</td>
-      <td class="td-medidas">
-        <span class="mini-badge">${escHtml(p.largo)}×${escHtml(p.ancho)}×${escHtml(p.espesor)} mm</span>
-        ${p.angulo ? `<span class="mini-badge">${escHtml(p.angulo)}°</span>` : ''}
-      </td>
-      <td>${escHtml(p.material) || '—'}</td>
       <td class="td-sm">${escHtml(p.referencia) || '—'}</td>
       <td class="td-sm">${escHtml(p.ral) || '—'}</td>
       <td style="text-align:center">${escHtml(p.cantidad)}</td>
@@ -345,17 +272,11 @@ function renderTable(list) {
 function populateDropdowns() {
   const all = getPedidos();
   const montadores = [...new Set(all.map(p => p.montador).filter(Boolean))].sort();
-  const materiales = [...new Set(all.map(p => p.material).filter(Boolean))].sort();
 
   const fM = document.getElementById('fMontador');
   const cur = fM.value;
   fM.innerHTML = '<option value="">Todos</option>' + montadores.map(m => `<option value="${escHtml(m)}">${escHtml(m)}</option>`).join('');
   fM.value = cur;
-
-  const fMat = document.getElementById('fMaterial');
-  const curMat = fMat.value;
-  fMat.innerHTML = '<option value="">Todos</option>' + materiales.map(m => `<option value="${escHtml(m)}">${escHtml(m)}</option>`).join('');
-  fMat.value = curMat;
 }
 
 // ─── Sort headers ─────────────────────────────────────────────────────────────
@@ -381,7 +302,6 @@ function renderAll() {
 if (!isAdminVerified) throw new Error('stop');
 document.getElementById('fMontador').addEventListener('change', e => { state.montador = e.target.value; renderAll(); });
 document.getElementById('fEstado').addEventListener('change',   e => { state.estado   = e.target.value; renderAll(); });
-document.getElementById('fMaterial').addEventListener('change', e => { state.material = e.target.value; renderAll(); });
 document.getElementById('fDesde').addEventListener('change',    e => { state.desde    = e.target.value; renderAll(); });
 document.getElementById('fHasta').addEventListener('change',    e => { state.hasta    = e.target.value; renderAll(); });
 document.getElementById('tableSearch').addEventListener('input', e => { state.search  = e.target.value; renderAll(); });
@@ -393,9 +313,9 @@ document.getElementById('refreshBtn').addEventListener('click', () => {
 });
 
 document.getElementById('fReset').addEventListener('click', () => {
-  state.montador = ''; state.estado = ''; state.material = '';
+  state.montador = ''; state.estado = '';
   state.desde = ''; state.hasta = ''; state.chartFilter = { type: '', value: '' }; state.search = '';
-  ['fMontador','fEstado','fMaterial','fDesde','fHasta'].forEach(id => document.getElementById(id).value = '');
+  ['fMontador','fEstado','fDesde','fHasta'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('tableSearch').value = '';
   renderAll();
 });
@@ -460,10 +380,9 @@ document.getElementById('clearAllBtn').addEventListener('click', () => {
 // Export CSV
 document.getElementById('exportCsv').addEventListener('click', () => {
   const list = sortList(getFiltered());
-  const headers = ['ID','Montador','Fecha','Largo','Ancho','Espesor','Ángulo','Material','Cantidad','Referencia','RAL','Estado','Notas'];
+  const headers = ['ID','Montador','Fecha','Cantidad','Cristal Fijo','Referencia','RAL','Estado','Notas'];
   const rows = list.map(p => [
-    p.id, p.montador, p.fecha, p.largo, p.ancho, p.espesor, p.angulo || '',
-    p.material || '', p.cantidad, p.referencia || '', p.ral || '', p.estado, p.notas || '',
+    p.id, p.montador, p.fecha, p.cantidad, p.cristalFijo ?? '', p.referencia || '', p.ral || '', p.estado, p.notas || '',
   ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
   const csv = [headers.join(','), ...rows].join('\n');
   const a = document.createElement('a');
@@ -472,25 +391,67 @@ document.getElementById('exportCsv').addEventListener('click', () => {
   a.click();
 });
 
+// ─── Users table ─────────────────────────────────────────────────────────────
+function renderUsers() {
+  const users   = JSON.parse(localStorage.getItem('users') || '[]');
+  const pedidos = getPedidos();
+  const tbody   = document.getElementById('usersBody');
+
+  document.getElementById('usersCount').textContent = `${users.length} usuario${users.length !== 1 ? 's' : ''}`;
+
+  if (!users.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">No hay usuarios registrados</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users.map(u => {
+    const count = pedidos.filter(p => p.userId === u.id).length;
+    const rolBadge = u.role === 'admin'
+      ? `<span class="badge badge-blue">Admin</span>`
+      : `<span class="badge badge-gray">Montador</span>`;
+    return `<tr>
+      <td><strong>${escHtml(u.nombre)}</strong></td>
+      <td>${escHtml(u.email)}</td>
+      <td>${rolBadge}</td>
+      <td class="td-sm">${escHtml(u.creadoEl || '—')}</td>
+      <td style="text-align:center">${count}</td>
+      <td>
+        <button class="icon-btn del" data-action="del-user" data-id="${u.id}" title="Eliminar usuario">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('usersToggle').addEventListener('click', () => {
+  const panel   = document.getElementById('usersCollapsible');
+  const chevron = document.getElementById('usersChevron');
+  const open    = panel.style.display === 'none';
+  panel.style.display  = open ? '' : 'none';
+  chevron.style.transform = open ? 'rotate(90deg)' : '';
+});
+
+document.getElementById('usersTable').addEventListener('click', e => {
+  const btn = e.target.closest('[data-action="del-user"]');
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const user  = users.find(u => u.id === id);
+  if (!user) return;
+  if (!confirm(`¿Eliminar al usuario "${user.nombre}"? Sus pedidos no se borrarán.`)) return;
+  localStorage.setItem('users', JSON.stringify(users.filter(u => u.id !== id)));
+  showToast(`Usuario "${user.nombre}" eliminado`);
+  renderUsers();
+});
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 if (isAdminVerified) {
-  const u = getCurrentUser();
-  const allPedidos = getPedidos();
-  const diagBar = document.getElementById('diagBar');
-  document.getElementById('diagCount').textContent = allPedidos.length;
-  document.getElementById('diagUser').textContent  = u ? u.nombre : '(sin sesión)';
-  document.getElementById('diagRole').textContent  = u ? u.role   : '—';
-  if (allPedidos.length === 0) diagBar.style.display = 'block';
-
   populateDropdowns();
   initCharts();
   renderAll();
+  renderUsers();
 
-  // Auto-refresh cuando otra pestaña guarda pedidos
   window.addEventListener('storage', e => {
-    if (e.key === 'pedidos') {
-      populateDropdowns();
-      renderAll();
-    }
+    if (e.key === 'pedidos') { populateDropdowns(); renderAll(); }
+    if (e.key === 'users')   { renderUsers(); }
   });
 }
