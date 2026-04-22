@@ -183,7 +183,7 @@ if (form) {
   }
 
   // Fill montador field
-  document.getElementById('montador').value = currentUser.nombre;
+  document.getElementById('montador').textContent = currentUser.nombre;
 
   // Upload logic
   const uploadArea    = document.getElementById('uploadArea');
@@ -231,13 +231,11 @@ if (form) {
   function validate() {
     let ok = true;
     [
-      { id: 'largo',    errId: 'err-largo',    msg: 'Ingresa el largo' },
-      { id: 'ancho',    errId: 'err-ancho',    msg: 'Ingresa el ancho' },
-      { id: 'espesor',  errId: 'err-espesor',  msg: 'Ingresa el espesor' },
-      { id: 'cantidad', errId: 'err-cantidad', msg: 'Ingresa la cantidad' },
+      { id: 'cantidad',   errId: 'err-cantidad',   msg: 'Ingresa la cantidad',         min: 1 },
+      { id: 'cristalFijo',errId: 'err-cristalFijo', msg: 'Ingresa la cantidad de cristal fijo', min: 0 },
     ].forEach(f => {
       const el = document.getElementById(f.id);
-      if (!el.value.trim() || Number(el.value) <= 0) {
+      if (el.value.trim() === '' || Number(el.value) < f.min) {
         el.classList.add('invalid'); document.getElementById(f.errId).textContent = f.msg; ok = false;
       } else {
         el.classList.remove('invalid'); document.getElementById(f.errId).textContent = '';
@@ -246,7 +244,7 @@ if (form) {
     return ok;
   }
 
-  ['largo','ancho','espesor','cantidad'].forEach(id => {
+  ['cantidad','cristalFijo'].forEach(id => {
     document.getElementById(id).addEventListener('input', () => {
       document.getElementById(id).classList.remove('invalid');
       document.getElementById('err-' + id).textContent = '';
@@ -261,12 +259,8 @@ if (form) {
       userId: currentUser.id,
       fecha: new Date().toLocaleString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }),
       montador: currentUser.nombre,
-      largo:    document.getElementById('largo').value,
-      ancho:    document.getElementById('ancho').value,
-      espesor:  document.getElementById('espesor').value,
-      angulo:   document.getElementById('angulo').value || '',
-      material: document.getElementById('material').value,
-      cantidad: document.getElementById('cantidad').value,
+      cantidad:   document.getElementById('cantidad').value,
+      cristalFijo: document.getElementById('cristalFijo').value,
       notas:      document.getElementById('notas').value.trim(),
       referencia: document.getElementById('referencia').value.trim(),
       ral:        document.getElementById('ral').value.trim(),
@@ -285,7 +279,7 @@ if (form) {
     }
     showToast('✅ Pedido enviado correctamente');
     form.reset();
-    document.getElementById('montador').value = currentUser.nombre;
+    document.getElementById('montador').textContent = currentUser.nombre;
     document.getElementById('referencia').value = '';
     document.getElementById('ral').value = '';
     fileData = null; fileName = null; fileType = null;
@@ -300,7 +294,7 @@ if (form) {
     previewImg.src = '';
     document.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
     document.querySelectorAll('.error-msg').forEach(el => el.textContent = '');
-    document.getElementById('montador').value = currentUser.nombre;
+    document.getElementById('montador').textContent = currentUser.nombre;
   });
 
   // Modal
