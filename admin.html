@@ -16,6 +16,12 @@
     </div>
 
     <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
+        <button class="auth-tab" data-tab="register">Crear cuenta</button>
+      </div>
+
+      <!-- LOGIN -->
       <form id="adminLoginForm" class="auth-form active" novalidate>
         <div class="form-group">
           <label for="adminEmail">Email</label>
@@ -33,21 +39,73 @@
         <div class="error-msg form-error" id="adminError"></div>
         <button type="submit" class="btn btn-primary btn-full" id="adminLoginBtn">Entrar</button>
       </form>
+
+      <!-- REGISTER -->
+      <form id="adminRegisterForm" class="auth-form" novalidate>
+        <div class="form-group">
+          <label for="regNombre">Nombre completo</label>
+          <input type="text" id="regNombre" placeholder="Ej: Juan García" required />
+          <span class="error-msg" id="err-regNombre"></span>
+        </div>
+        <div class="form-group">
+          <label for="regEmail">Email</label>
+          <input type="email" id="regEmail" placeholder="tu@email.com" required />
+          <span class="error-msg" id="err-regEmail"></span>
+        </div>
+        <div class="form-group">
+          <label for="regPassword">Contraseña</label>
+          <div class="pass-wrap">
+            <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" required />
+            <button type="button" class="toggle-pass" data-target="regPassword">👁</button>
+          </div>
+          <span class="error-msg" id="err-regPassword"></span>
+        </div>
+        <div class="form-group">
+          <label for="regPassword2">Confirmar contraseña</label>
+          <div class="pass-wrap">
+            <input type="password" id="regPassword2" placeholder="Repite tu contraseña" required />
+            <button type="button" class="toggle-pass" data-target="regPassword2">👁</button>
+          </div>
+          <span class="error-msg" id="err-regPassword2"></span>
+        </div>
+        <div class="form-group">
+          <label for="regAdminCode">Código de administrador</label>
+          <input type="text" id="regAdminCode" placeholder="Código requerido" required />
+          <span class="error-msg" id="err-regAdminCode"></span>
+        </div>
+        <div class="error-msg form-error" id="registerError"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="adminRegisterBtn">Crear cuenta</button>
+      </form>
     </div>
   </div>
 
   <script src="auth.js"></script>
   <script>
-    // Redirect if already logged in as admin
     const existing = getCurrentUser();
     if (existing && existing.role === 'admin') window.location.href = 'dashboard.html';
 
-    document.querySelector('.toggle-pass').addEventListener('click', function () {
-      const inp = document.getElementById(this.dataset.target);
-      inp.type = inp.type === 'password' ? 'text' : 'password';
-      this.textContent = inp.type === 'password' ? '👁' : '🙈';
+    // Tabs
+    const tabs  = document.querySelectorAll('.auth-tab');
+    const forms = document.querySelectorAll('.auth-form');
+    function switchTab(name) {
+      tabs.forEach(t  => t.classList.toggle('active', t.dataset.tab === name));
+      forms.forEach(f => f.classList.toggle('active', f.id === name + (name === 'login' ? 'LoginForm' : 'RegisterForm').replace('loginLoginForm','adminLoginForm').replace('registerRegisterForm','adminRegisterForm')));
+      // simpler approach:
+      document.getElementById('adminLoginForm').classList.toggle('active', name === 'login');
+      document.getElementById('adminRegisterForm').classList.toggle('active', name === 'register');
+    }
+    tabs.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+    // Toggle password visibility
+    document.querySelectorAll('.toggle-pass').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const inp = document.getElementById(this.dataset.target);
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        this.textContent = inp.type === 'password' ? '👁' : '🙈';
+      });
     });
 
+    // LOGIN
     document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('adminEmail').value.trim();
@@ -78,10 +136,61 @@
       }
     });
 
+    // REGISTER
+    document.getElementById('adminRegisterForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombre    = document.getElementById('regNombre').value.trim();
+      const email     = document.getElementById('regEmail').value.trim();
+      const pass      = document.getElementById('regPassword').value;
+      const pass2     = document.getElementById('regPassword2').value;
+      const adminCode = document.getElementById('regAdminCode').value.trim();
+      const errEl     = document.getElementById('registerError');
+      const btn       = document.getElementById('adminRegisterBtn');
+      let ok = true;
+
+      ['err-regNombre','err-regEmail','err-regPassword','err-regPassword2','err-regAdminCode'].forEach(id =>
+        document.getElementById(id).textContent = '');
+      errEl.textContent = '';
+
+      const setErr = (id, msg) => { document.getElementById(id).textContent = msg; ok = false; };
+
+      if (!nombre) setErr('err-regNombre', 'Ingresa tu nombre');
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) setErr('err-regEmail', 'Ingresa un email válido');
+      if (pass.length < 6) setErr('err-regPassword', 'Mínimo 6 caracteres');
+      if (pass !== pass2)  setErr('err-regPassword2', 'Las contraseñas no coinciden');
+      if (!adminCode)      setErr('err-regAdminCode', 'El código de administrador es obligatorio');
+      if (!ok) return;
+
+      btn.disabled = true; btn.textContent = 'Creando cuenta...';
+      try {
+        const user = await registerUser(nombre, email, pass, adminCode);
+        if (user.role !== 'admin') {
+          errEl.textContent = 'Código de administrador incorrecto.';
+          // remove the user just created with wrong role
+          const users = getUsers().filter(u => u.id !== user.id);
+          saveUsers(users);
+          btn.disabled = false; btn.textContent = 'Crear cuenta';
+          return;
+        }
+        setCurrentUser(user);
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        errEl.textContent = err.message;
+        btn.disabled = false; btn.textContent = 'Crear cuenta';
+      }
+    });
+
+    // Clear errors on input
     ['adminEmail','adminPassword'].forEach(id => {
       document.getElementById(id).addEventListener('input', () => {
         document.getElementById('err-' + id).textContent = '';
         document.getElementById('adminError').textContent = '';
+      });
+    });
+    ['regNombre','regEmail','regPassword','regPassword2','regAdminCode'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        document.getElementById('err-' + id).textContent = '';
+        document.getElementById('registerError').textContent = '';
       });
     });
   </script>
