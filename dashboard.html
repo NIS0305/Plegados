@@ -4,23 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — Plegados</title>
+  <link rel="icon" href="favicon.jpg" type="image/jpeg" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <nav class="navbar">
-    <div class="nav-brand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path d="M4 4h7l5 5v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><polyline points="11 4 11 10 17 10"/><line x1="7" y1="15" x2="13" y2="15"/><line x1="7" y1="18" x2="11" y2="18"/></svg> Plegados</div>
+    <div class="nav-brand"></div>
     <div class="nav-links">
       <a href="index.html" class="nav-link">Nuevo Pedido</a>
       <a href="dashboard.html" class="nav-link active">Dashboard</a>
     </div>
     <div class="nav-user" id="navUserArea"></div>
   </nav>
-
-  <!-- Diagnóstico visible -->
-  <div id="diagBar" style="display:none;background:#2d1f00;border-bottom:1px solid #78350f;padding:8px 24px;font-size:13px;color:#fbbf24">
-    ⚠️ <strong>Diagnóstico:</strong> pedidos en localStorage: <strong id="diagCount">?</strong> &nbsp;|&nbsp; usuario: <strong id="diagUser">?</strong> &nbsp;|&nbsp; rol: <strong id="diagRole">?</strong>
-    <button onclick="document.getElementById('diagBar').style.display='none'" style="margin-left:16px;background:none;border:none;cursor:pointer;font-size:14px">✕</button>
-  </div>
 
   <!-- Filter bar -->
   <div class="bi-filterbar">
@@ -39,10 +34,6 @@
           <option value="Entregado a montador">Entregado a montador</option>
           <option value="Entregado a reparto">Entregado a reparto</option>
         </select>
-      </div>
-      <div class="bi-filter-item">
-        <label class="bi-filter-label">Material</label>
-        <select id="fMaterial" class="bi-select"><option value="">Todos</option></select>
       </div>
       <div class="bi-filter-item">
         <label class="bi-filter-label">Desde</label>
@@ -140,24 +131,6 @@
       </div>
       <div class="chart-card">
         <div class="chart-header">
-          <h3 class="chart-title">Pedidos por Montador</h3>
-          <span class="chart-hint">Clic para filtrar</span>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="chartMontador"></canvas>
-        </div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-header">
-          <h3 class="chart-title">Pedidos por Material</h3>
-          <span class="chart-hint">Clic para filtrar</span>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="chartMaterial"></canvas>
-        </div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-header">
           <h3 class="chart-title">Evolución Temporal</h3>
           <span class="chart-hint">Últimos 30 días</span>
         </div>
@@ -187,8 +160,6 @@
               <th class="sortable" data-col="id">#</th>
               <th class="sortable" data-col="montador">Montador</th>
               <th class="sortable" data-col="fecha">Fecha</th>
-              <th>Medidas</th>
-              <th class="sortable" data-col="material">Material</th>
               <th class="sortable" data-col="referencia">Referencia</th>
               <th class="sortable" data-col="ral">RAL</th>
               <th class="sortable" data-col="cantidad">Cant.</th>
@@ -199,6 +170,34 @@
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Users collapsible -->
+    <div class="table-card" style="margin-top:24px">
+      <div class="table-topbar" id="usersToggle" style="cursor:pointer;user-select:none">
+        <div style="display:flex;align-items:center;gap:10px">
+          <h3 class="chart-title" style="margin:0">Usuarios registrados</h3>
+          <span class="table-count" id="usersCount"></span>
+        </div>
+        <span id="usersChevron" style="font-size:18px;color:var(--text-muted);transition:transform .2s">▸</span>
+      </div>
+      <div id="usersCollapsible" style="display:none">
+        <div class="table-wrap">
+          <table class="bi-table" id="usersTable">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Registro</th>
+                <th>Pedidos</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
