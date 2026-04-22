@@ -4,13 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nuevo Pedido — Plegados</title>
+  <link rel="icon" href="favicon.jpg" type="image/jpeg" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <nav class="navbar">
-    <div class="nav-brand">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path d="M4 4h7l5 5v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><polyline points="11 4 11 10 17 10"/><line x1="7" y1="15" x2="13" y2="15"/><line x1="7" y1="18" x2="11" y2="18"/></svg> Plegados
-    </div>
+    <div class="nav-brand"></div>
     <div class="nav-links">
       <a href="index.html" class="nav-link active">Nuevo Pedido</a>
       <a href="dashboard.html" class="nav-link">Dashboard</a>
@@ -24,53 +23,18 @@
 
   <main class="container">
     <div class="card">
-      <h1 class="card-title">Nuevo Pedido de Plegado</h1>
-      <p class="card-subtitle">Completa el formulario para enviar tu solicitud</p>
+      <div class="form-logo-wrap">
+        <img src="logo.png" alt="Lumon" class="form-logo" />
+      </div>
 
       <form id="pedidoForm" novalidate>
 
-        <div class="form-group">
-          <label for="montador">Nombre del Montador</label>
-          <input type="text" id="montador" readonly class="input-readonly" />
+        <div class="form-group" style="display:flex;align-items:center;gap:10px">
+          <label style="margin:0;white-space:nowrap;font-weight:800;font-size:26px">Hola!</label>
+          <span id="montador" style="font-weight:600;font-size:26px;color:var(--text)"></span>
+          <input type="hidden" id="montadorHidden" />
         </div>
 
-        <div class="form-group">
-          <label>Medidas de Plegado *</label>
-          <div class="medidas-grid">
-            <div>
-              <label class="sublabel" for="largo">Largo (mm)</label>
-              <input type="number" id="largo" placeholder="0" min="1" required />
-              <span class="error-msg" id="err-largo"></span>
-            </div>
-            <div>
-              <label class="sublabel" for="ancho">Ancho (mm)</label>
-              <input type="number" id="ancho" placeholder="0" min="1" required />
-              <span class="error-msg" id="err-ancho"></span>
-            </div>
-            <div>
-              <label class="sublabel" for="espesor">Espesor (mm)</label>
-              <input type="number" id="espesor" placeholder="0" min="0.1" step="0.1" required />
-              <span class="error-msg" id="err-espesor"></span>
-            </div>
-            <div>
-              <label class="sublabel" for="angulo">Ángulo (°)</label>
-              <input type="number" id="angulo" placeholder="90" min="1" max="180" />
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="material">Material</label>
-          <select id="material">
-            <option value="">Seleccionar material...</option>
-            <option value="Acero inoxidable">Acero inoxidable</option>
-            <option value="Acero galvanizado">Acero galvanizado</option>
-            <option value="Aluminio">Aluminio</option>
-            <option value="Cobre">Cobre</option>
-            <option value="Hierro">Hierro</option>
-            <option value="Otro">Otro</option>
-          </select>
-        </div>
 
         <div class="form-group">
           <label for="cantidad">Cantidad de Piezas *</label>
@@ -87,6 +51,12 @@
             <label for="ral">Color RAL</label>
             <input type="text" id="ral" placeholder="Ej: RAL 9005" />
           </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cristalFijo">Cristal fijo *</label>
+          <input type="number" id="cristalFijo" placeholder="0" min="0" value="0" required />
+          <span class="error-msg" id="err-cristalFijo"></span>
         </div>
 
         <div class="form-group">
