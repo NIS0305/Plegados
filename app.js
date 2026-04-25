@@ -132,21 +132,12 @@ function openModal(pedido) {
       <div class="detail-value"><span class="badge ${badgeClass(pedido.estado)}">${pedido.estado}</span></div>
     </div>
     <div class="detail-row">
-      <div class="detail-label">Medidas de Plegado</div>
-      <div class="detail-value">
-        Largo: <strong>${escHtml(pedido.largo)} mm</strong> &nbsp;·&nbsp;
-        Ancho: <strong>${escHtml(pedido.ancho)} mm</strong> &nbsp;·&nbsp;
-        Espesor: <strong>${escHtml(pedido.espesor)} mm</strong>
-        ${pedido.angulo ? ` &nbsp;·&nbsp; Ángulo: <strong>${escHtml(pedido.angulo)}°</strong>` : ''}
-      </div>
-    </div>
-    <div class="detail-row">
       <div class="detail-label">Cantidad</div>
       <div class="detail-value">${escHtml(pedido.cantidad)} piezas</div>
     </div>
-    ${pedido.material ? `<div class="detail-row">
-      <div class="detail-label">Material</div>
-      <div class="detail-value">${escHtml(pedido.material)}</div>
+    ${pedido.cristalFijo != null ? `<div class="detail-row">
+      <div class="detail-label">Cristal fijo</div>
+      <div class="detail-value">${escHtml(pedido.cristalFijo)}</div>
     </div>` : ''}
     ${pedido.referencia ? `<div class="detail-row">
       <div class="detail-label">Número de Referencia</div>
@@ -349,11 +340,8 @@ if (form) {
             <span class="pedido-fecha">${p.fecha}</span>
           </div>
           <div class="medidas-row">
-            <div class="medida-item"><span>Largo: </span>${escHtml(p.largo)} mm</div>
-            <div class="medida-item"><span>Ancho: </span>${escHtml(p.ancho)} mm</div>
-            <div class="medida-item"><span>Espesor: </span>${escHtml(p.espesor)} mm</div>
-            ${p.angulo ? `<div class="medida-item"><span>Ángulo: </span>${escHtml(p.angulo)}°</div>` : ''}
             <div class="medida-item"><span>Cant.: </span>${escHtml(p.cantidad)} pz</div>
+            ${p.cristalFijo != null ? `<div class="medida-item"><span>Cristal fijo: </span>${escHtml(p.cristalFijo)}</div>` : ''}
           </div>
           <div class="pedido-meta">
             <span class="badge ${badgeClass(p.estado)}">${p.estado}</span>
