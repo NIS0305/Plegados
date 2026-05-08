@@ -1,5 +1,5 @@
 // Shared utilities
-
+//prueba
 function showToast(msg, duration = 2500) {
   const t = document.getElementById('toast');
   if (!t) return;
