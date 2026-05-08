@@ -8,45 +8,18 @@ function showToast(msg, duration = 2500) {
   setTimeout(() => t.classList.remove('show'), duration);
 }
 
-function getPedidos() {
-  try { return JSON.parse(localStorage.getItem('pedidos') || '[]'); }
-  catch(e) { console.error('getPedidos error:', e); return []; }
-}
-
-function savePedidos(list) {
-  try {
-    localStorage.setItem('pedidos', JSON.stringify(list));
-  } catch(e) {
-    console.error('savePedidos error:', e);
-    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-      // Reintentar sin imágenes para liberar espacio
-      try {
-        const sinImagenes = list.map(p => ({ ...p, fileData: null, fileName: null, fileType: null }));
-        localStorage.setItem('pedidos', JSON.stringify(sinImagenes));
-        showToast('⚠️ Guardado sin imagen (almacenamiento lleno)');
-      } catch(e2) {
-        showToast('❌ Almacenamiento lleno. Borra pedidos antiguos desde el dashboard.');
-        throw e2;
-      }
-    } else {
-      showToast('❌ Error al guardar: ' + e.message);
-      throw e;
-    }
-  }
-}
-
 function escHtml(str) {
   if (str == null) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 const WORKFLOW_STEPS = [
-  { key: 'Pendiente',              icon: '📋', label: 'Pendiente' },
-  { key: 'En proceso',             icon: '🔧', label: 'En proceso' },
-  { key: 'Completado',             icon: '✅', label: 'Completado' },
-  { key: 'En taller',              icon: '🏭', label: 'En taller' },
-  { key: 'Entregado a montador',   icon: '👷', label: 'Entregado a ti' },
-  { key: 'Entregado a reparto',    icon: '🎉', label: 'Entregado' },
+  { key: 'Pendiente',            icon: '📋', label: 'Pendiente' },
+  { key: 'En proceso',           icon: '🔧', label: 'En proceso' },
+  { key: 'Completado',           icon: '✅', label: 'Completado' },
+  { key: 'En taller',            icon: '🏭', label: 'En taller' },
+  { key: 'Entregado a montador', icon: '👷', label: 'Entregado a ti' },
+  { key: 'Entregado a reparto',  icon: '🎉', label: 'Entregado' },
 ];
 
 function badgeClass(estado) {
@@ -63,9 +36,9 @@ function renderStepper(estado) {
   const currentIdx = WORKFLOW_STEPS.findIndex(s => s.key === estado);
   return `<div class="stepper">
     ${WORKFLOW_STEPS.map((s, i) => {
-      const done    = i < currentIdx;
-      const active  = i === currentIdx;
-      const cls     = done ? 'step-done' : active ? 'step-active' : 'step-pending';
+      const done   = i < currentIdx;
+      const active = i === currentIdx;
+      const cls    = done ? 'step-done' : active ? 'step-active' : 'step-pending';
       return `
         <div class="step ${cls}">
           <div class="step-circle">${done ? '✓' : s.icon}</div>
@@ -106,15 +79,19 @@ function openModal(pedido) {
   document.getElementById('modalTitle').textContent = `Pedido #${pedido.id}`;
 
   let imgHtml = '';
-  if (pedido.fileData && pedido.fileType && pedido.fileType.startsWith('image/')) {
+  const imgUrl  = pedido.filePath ? getPublicUrl(pedido.filePath) : (pedido.fileData || null);
+  const isImage = pedido.fileType?.startsWith('image/') ||
+                  /\.(jpg|jpeg|png|svg|webp)$/i.test(pedido.filePath || '');
+
+  if (imgUrl && isImage) {
     imgHtml = `<div class="detail-row">
       <div class="detail-label">Dibujo adjunto</div>
-      <img src="${pedido.fileData}" class="modal-img" alt="Dibujo" />
+      <img src="${imgUrl}" class="modal-img" alt="Dibujo" />
     </div>`;
-  } else if (pedido.fileData) {
+  } else if (imgUrl) {
     imgHtml = `<div class="detail-row">
       <div class="detail-label">Archivo adjunto</div>
-      <p class="detail-value">📄 ${escHtml(pedido.fileName)}</p>
+      <p class="detail-value"><a href="${imgUrl}" target="_blank" style="color:var(--blue)">📄 ${escHtml(pedido.fileName)}</a></p>
     </div>`;
   }
 
@@ -163,24 +140,19 @@ function openModal(pedido) {
 // ===== FORM PAGE =====
 const form = document.getElementById('pedidoForm');
 if (form) {
-  // Auth check
   const currentUser = requireAuth();
   if (!currentUser) throw new Error('Not authenticated');
 
-  // Fill navbar
   document.getElementById('navUsername').textContent = currentUser.nombre;
-  document.getElementById('navAvatar').textContent = currentUser.nombre.charAt(0).toUpperCase();
+  document.getElementById('navAvatar').textContent   = currentUser.nombre.charAt(0).toUpperCase();
   document.getElementById('logoutBtn').addEventListener('click', logout);
-  // Montadores cannot see dashboard link
   if (currentUser.role !== 'admin') {
     const dashLink = document.querySelector('a[href="dashboard.html"]');
     if (dashLink) dashLink.style.display = 'none';
   }
 
-  // Fill montador field
   document.getElementById('montador').textContent = currentUser.nombre;
 
-  // Upload logic
   const uploadArea    = document.getElementById('uploadArea');
   const fileInput     = document.getElementById('dibujo');
   const browseBtn     = document.getElementById('browseBtn');
@@ -189,7 +161,7 @@ if (form) {
   const previewImg    = document.getElementById('previewImg');
   const fileNameEl    = document.getElementById('fileName');
   const removeFile    = document.getElementById('removeFile');
-  let fileData = null, fileName = null, fileType = null;
+  let fileData = null, fileName = null, fileType = null, fileObj = null;
 
   browseBtn.addEventListener('click', () => fileInput.click());
   uploadArea.addEventListener('click', (e) => {
@@ -204,7 +176,7 @@ if (form) {
   });
   fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
   removeFile.addEventListener('click', () => {
-    fileData = null; fileName = null; fileType = null; fileInput.value = '';
+    fileData = null; fileName = null; fileType = null; fileObj = null; fileInput.value = '';
     filePreview.style.display = 'none'; uploadContent.style.display = '';
   });
 
@@ -212,6 +184,7 @@ if (form) {
     const valid = ['image/jpeg','image/png','image/svg+xml','image/webp','application/pdf'];
     if (!valid.includes(file.type)) { showToast('Tipo de archivo no soportado.'); return; }
     if (file.size > 10 * 1024 * 1024) { showToast('El archivo supera los 10 MB.'); return; }
+    fileObj = file;
     const reader = new FileReader();
     reader.onload = (e) => {
       fileData = e.target.result; fileName = file.name; fileType = file.type;
@@ -226,8 +199,8 @@ if (form) {
   function validate() {
     let ok = true;
     [
-      { id: 'cantidad',   errId: 'err-cantidad',   msg: 'Ingresa la cantidad',         min: 1 },
-      { id: 'cristalFijo',errId: 'err-cristalFijo', msg: 'Ingresa la cantidad de cristal fijo', min: 0 },
+      { id: 'cantidad',    errId: 'err-cantidad',    msg: 'Ingresa la cantidad',                 min: 1 },
+      { id: 'cristalFijo', errId: 'err-cristalFijo', msg: 'Ingresa la cantidad de cristal fijo', min: 0 },
     ].forEach(f => {
       const el = document.getElementById(f.id);
       if (el.value.trim() === '' || Number(el.value) < f.min) {
@@ -246,45 +219,59 @@ if (form) {
     });
   });
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    const pedido = {
-      id: Date.now(),
-      userId: currentUser.id,
-      fecha: new Date().toLocaleString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }),
-      montador: currentUser.nombre,
-      cantidad:   document.getElementById('cantidad').value,
-      cristalFijo: document.getElementById('cristalFijo').value,
-      notas:      document.getElementById('notas').value.trim(),
-      referencia: document.getElementById('referencia').value.trim(),
-      ral:        document.getElementById('ral').value.trim(),
-      fileData, fileName, fileType,
-      estado: 'Pendiente',
-    };
-    const pedidos = getPedidos();
-    pedidos.unshift(pedido);
-    console.log('Guardando pedido:', pedido.id, '| Total antes:', pedidos.length);
-    savePedidos(pedidos);
-    const verificacion = getPedidos();
-    if (verificacion.length === 0 || verificacion[0].id !== pedido.id) {
-      showToast('❌ El pedido no se pudo guardar. Comprueba la consola.');
-      console.error('savePedidos verification failed', { saved: verificacion.length, expectedId: pedido.id });
-      return;
+
+    const submitBtn = form.querySelector('[type="submit"]');
+    submitBtn.disabled = true; submitBtn.textContent = 'Enviando...';
+
+    try {
+      const pedidoId = Date.now();
+      let filePath = null;
+
+      if (fileObj) {
+        try {
+          filePath = await uploadDibujo(fileObj, pedidoId);
+        } catch (err) {
+          console.warn('Upload failed:', err);
+          showToast('⚠️ No se pudo subir el archivo, el pedido se guardará sin imagen.');
+        }
+      }
+
+      const pedido = {
+        id:          pedidoId,
+        userId:      currentUser.id,
+        fecha:       new Date().toLocaleString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+        montador:    currentUser.nombre,
+        cantidad:    document.getElementById('cantidad').value,
+        cristalFijo: document.getElementById('cristalFijo').value,
+        notas:       document.getElementById('notas').value.trim(),
+        referencia:  document.getElementById('referencia').value.trim(),
+        ral:         document.getElementById('ral').value.trim(),
+        filePath, fileName, fileType,
+        estado:      'Pendiente',
+      };
+
+      await savePedido(pedido);
+      showToast('✅ Pedido enviado correctamente');
+
+      form.reset();
+      document.getElementById('montador').textContent = currentUser.nombre;
+      fileData = null; fileName = null; fileType = null; fileObj = null;
+      filePreview.style.display = 'none'; uploadContent.style.display = '';
+      previewImg.src = '';
+      await renderMyOrders();
+    } catch (err) {
+      console.error('Submit error:', err);
+      showToast('❌ Error al enviar: ' + err.message);
+    } finally {
+      submitBtn.disabled = false; submitBtn.textContent = 'Enviar Pedido';
     }
-    showToast('✅ Pedido enviado correctamente');
-    form.reset();
-    document.getElementById('montador').textContent = currentUser.nombre;
-    document.getElementById('referencia').value = '';
-    document.getElementById('ral').value = '';
-    fileData = null; fileName = null; fileType = null;
-    filePreview.style.display = 'none'; uploadContent.style.display = '';
-    previewImg.src = '';
-    renderMyOrders();
   });
 
   document.getElementById('resetBtn').addEventListener('click', () => {
-    fileData = null; fileName = null; fileType = null;
+    fileData = null; fileName = null; fileType = null; fileObj = null;
     filePreview.style.display = 'none'; uploadContent.style.display = '';
     previewImg.src = '';
     document.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
@@ -292,7 +279,6 @@ if (form) {
     document.getElementById('montador').textContent = currentUser.nombre;
   });
 
-  // Modal
   document.getElementById('modalClose').addEventListener('click', () =>
     document.getElementById('modalOverlay').style.display = 'none');
   document.getElementById('modalOverlay').addEventListener('click', (e) => {
@@ -300,44 +286,45 @@ if (form) {
       document.getElementById('modalOverlay').style.display = 'none';
   });
 
-  // My orders list
   document.getElementById('myFilterEstado').addEventListener('change', renderMyOrders);
 
-  document.getElementById('misPedidosList').addEventListener('click', (e) => {
+  document.getElementById('misPedidosList').addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     const id = Number(btn.dataset.id);
     if (btn.dataset.action === 'ver') {
-      const p = getPedidos().find(p => p.id === id);
+      const list = await getPedidos({ userId: currentUser.id });
+      const p = list.find(p => p.id === id);
       if (p) openModal(p);
     }
   });
 
-  function renderMyOrders() {
-    const list   = document.getElementById('misPedidosList');
-    const estado = document.getElementById('myFilterEstado').value;
-    let pedidos  = getPedidos().filter(p => p.userId === currentUser.id);
+  async function renderMyOrders() {
+    const listEl  = document.getElementById('misPedidosList');
+    const estado  = document.getElementById('myFilterEstado').value;
+    let pedidos   = await getPedidos({ userId: currentUser.id });
+
+    document.getElementById('myCount').textContent = pedidos.length;
     if (estado) pedidos = pedidos.filter(p => p.estado === estado);
 
-    document.getElementById('myCount').textContent = getPedidos().filter(p => p.userId === currentUser.id).length;
-
     if (pedidos.length === 0) {
-      list.innerHTML = `<div class="empty-state" style="padding:32px 0">
+      listEl.innerHTML = `<div class="empty-state" style="padding:32px 0">
         <span class="empty-icon" style="font-size:36px">📋</span>
         <p>${estado ? 'No hay pedidos con ese estado.' : 'Aún no has enviado pedidos.'}</p>
       </div>`;
       return;
     }
 
-    list.innerHTML = pedidos.map(p => {
+    listEl.innerHTML = pedidos.map(p => {
       let fileHtml = '';
-      if (p.fileData && p.fileType && p.fileType.startsWith('image/'))
-        fileHtml = `<img src="${p.fileData}" class="thumb-preview" alt="Dibujo" data-id="${p.id}" />`;
-      else if (p.fileData)
+      const imgUrl = p.filePath ? getPublicUrl(p.filePath) : null;
+      if (imgUrl && p.fileType?.startsWith('image/'))
+        fileHtml = `<img src="${imgUrl}" class="thumb-preview" alt="Dibujo" data-id="${p.id}" />`;
+      else if (imgUrl)
         fileHtml = `<span class="has-file-icon" style="font-size:28px" data-id="${p.id}" title="${escHtml(p.fileName)}">📄</span>`;
 
       return `
-      <div class="pedido-card estado-${escHtml(p.estado.replace(' ','-'))}">
+      <div class="pedido-card estado-${escHtml(p.estado.replace(/ /g,'-'))}">
         <div class="pedido-info">
           <div class="pedido-top">
             <span class="pedido-id">#${p.id}</span>
@@ -349,7 +336,6 @@ if (form) {
           </div>
           <div class="pedido-meta">
             <span class="badge ${badgeClass(p.estado)}">${p.estado}</span>
-            ${p.material ? `<span class="badge badge-gray">${escHtml(p.material)}</span>` : ''}
             ${p.referencia ? `<span class="badge badge-gray">📎 ${escHtml(p.referencia)}</span>` : ''}
             ${p.ral ? `<span class="badge badge-gray">🎨 ${escHtml(p.ral)}</span>` : ''}
             ${fileHtml}
@@ -364,6 +350,9 @@ if (form) {
       </div>`;
     }).join('');
   }
+
+  // Realtime: actualiza el historial cuando el admin cambia estado o agrega nota
+  subscribePedidos(() => renderMyOrders());
 
   renderMyOrders();
 }
