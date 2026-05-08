@@ -203,6 +203,23 @@
 
   </main>
 
+  <!-- Modal nota -->
+  <div class="modal-overlay" id="noteModalOverlay" style="display:none">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header">
+        <h2 id="noteModalTitle">Nota del pedido</h2>
+        <button class="modal-close" id="noteModalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <textarea id="noteTextarea" rows="5" placeholder="Escribe una nota para este pedido..." style="width:100%;resize:vertical"></textarea>
+        <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+          <button class="btn btn-secondary btn-sm" id="noteModalCancel">Cancelar</button>
+          <button class="btn btn-primary btn-sm" id="noteModalSave">Guardar nota</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal detalle -->
   <div class="modal-overlay" id="modalOverlay" style="display:none">
     <div class="modal">
