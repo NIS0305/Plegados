@@ -261,8 +261,10 @@ function renderTable(list) {
       <td>
         <div style="display:flex;gap:4px">
           <button class="icon-btn" data-action="ver" data-id="${p.id}" title="Detalle">🔍</button>
+          <button class="icon-btn${p.notaAdmin ? ' nota-activa' : ''}" data-action="nota" data-id="${p.id}" title="${p.notaAdmin ? 'Editar nota' : 'Agregar nota'}" style="${p.notaAdmin ? 'color:#4f8ef7;border-color:#4f8ef7' : ''}">✏️</button>
           <button class="icon-btn del" data-action="del" data-id="${p.id}" title="Eliminar">🗑️</button>
         </div>
+        ${p.notaAdmin ? `<div style="margin-top:5px;font-size:11px;color:#7a90b8;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.notaAdmin)}">📝 ${escHtml(p.notaAdmin)}</div>` : ''}
       </td>
     </tr>`;
   }).join('');
@@ -442,6 +444,54 @@ document.getElementById('usersTable').addEventListener('click', e => {
   showToast(`Usuario "${user.nombre}" eliminado`);
   renderUsers();
 });
+
+// ─── Note modal ──────────────────────────────────────────────────────────────
+let noteTargetId = null;
+
+function openNoteModal(id) {
+  const p = getPedidos().find(p => p.id === id);
+  if (!p) return;
+  noteTargetId = id;
+  document.getElementById('noteModalTitle').textContent = `Nota — Pedido #${id}`;
+  document.getElementById('noteTextarea').value = p.notaAdmin || '';
+  document.getElementById('noteModalOverlay').style.display = 'flex';
+  document.getElementById('noteTextarea').focus();
+}
+
+function closeNoteModal() {
+  document.getElementById('noteModalOverlay').style.display = 'none';
+  noteTargetId = null;
+}
+
+document.getElementById('noteModalClose').addEventListener('click', closeNoteModal);
+document.getElementById('noteModalCancel').addEventListener('click', closeNoteModal);
+document.getElementById('noteModalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('noteModalOverlay')) closeNoteModal();
+});
+
+document.getElementById('noteModalSave').addEventListener('click', () => {
+  if (!noteTargetId) return;
+  const list = getPedidos();
+  const p = list.find(p => p.id === noteTargetId);
+  if (!p) return;
+  p.notaAdmin = document.getElementById('noteTextarea').value.trim();
+  savePedidos(list);
+  closeNoteModal();
+  renderAll();
+  showToast('Nota guardada');
+});
+
+// Ctrl+Enter to save note
+document.getElementById('noteTextarea').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) document.getElementById('noteModalSave').click();
+});
+
+// Hook nota action into table click delegation
+document.getElementById('ordersTable').addEventListener('click', e => {
+  const btn = e.target.closest('[data-action="nota"]');
+  if (!btn) return;
+  openNoteModal(Number(btn.dataset.id));
+}, true);
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 if (isAdminVerified) {
