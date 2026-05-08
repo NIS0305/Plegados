@@ -79,6 +79,8 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase.js"></script>
   <script src="auth.js"></script>
   <script>
     const existing = getCurrentUser();
@@ -161,17 +163,13 @@
       if (!adminCode)      setErr('err-regAdminCode', 'El código de administrador es obligatorio');
       if (!ok) return;
 
+      if (adminCode !== ADMIN_CODE) {
+        setErr('err-regAdminCode', 'Código de administrador incorrecto.');
+        return;
+      }
       btn.disabled = true; btn.textContent = 'Creando cuenta...';
       try {
         const user = await registerUser(nombre, email, pass, adminCode);
-        if (user.role !== 'admin') {
-          errEl.textContent = 'Código de administrador incorrecto.';
-          // remove the user just created with wrong role
-          const users = getUsers().filter(u => u.id !== user.id);
-          saveUsers(users);
-          btn.disabled = false; btn.textContent = 'Crear cuenta';
-          return;
-        }
         setCurrentUser(user);
         window.location.href = 'dashboard.html';
       } catch (err) {
