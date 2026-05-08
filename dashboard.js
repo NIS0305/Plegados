@@ -1,9 +1,8 @@
 // ─── Auth + Nav ──────────────────────────────────────────────────────────────
-// isAdminVerified evita que renderAll() corra si el usuario no es admin
 let isAdminVerified = false;
 
 (function () {
-  const u = requireAdmin();   // redirige si no es admin
+  const u = requireAdmin();
   if (!u) return;
   isAdminVerified = true;
   const area = document.getElementById('navUserArea');
@@ -15,8 +14,6 @@ let isAdminVerified = false;
   document.getElementById('logoutBtn').addEventListener('click', logout);
 })();
 
-// Chart.js se configura dentro de initCharts() para no bloquear el resto si falla
-
 const COLORS = {
   'Pendiente':            '#f59e0b',
   'En proceso':           '#3b82f6',
@@ -24,7 +21,6 @@ const COLORS = {
   'En taller':            '#6366f1',
   'Entregado a montador': '#0d9488',
   'Entregado a reparto':  '#059669',
-  multi: ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#f97316','#06b6d4','#84cc16','#ec4899','#14b8a6'],
 };
 
 const ESTADOS = ['Pendiente', 'Completado', 'En taller', 'Entregado a montador', 'Entregado a reparto'];
@@ -38,10 +34,11 @@ const state = {
   search: '',
 };
 
+let allPedidos = [];
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function parseFecha(str) {
   if (!str) return new Date(0);
-  // format: "19/04/2026, 14:35"
   const [date, time = '00:00'] = str.split(', ');
   const [d, m, y] = date.split('/');
   return new Date(`${y}-${m}-${d}T${time}`);
@@ -56,7 +53,7 @@ function pct(n, total) {
 }
 
 function getFiltered() {
-  let list = getPedidos();
+  let list = allPedidos;
   if (state.montador) list = list.filter(p => p.montador === state.montador);
   if (state.estado)   list = list.filter(p => p.estado   === state.estado);
   if (state.desde)    list = list.filter(p => parseFecha(p.fecha) >= new Date(state.desde));
@@ -80,12 +77,12 @@ function getFiltered() {
 
 // ─── KPIs ────────────────────────────────────────────────────────────────────
 function renderKPIs(list) {
-  const total      = list.length;
-  const pendiente  = list.filter(p => p.estado === 'Pendiente').length;
-  const completado = list.filter(p => p.estado === 'Completado').length;
-  const enTaller   = list.filter(p => p.estado === 'En taller').length;
-  const entMontador= list.filter(p => p.estado === 'Entregado a montador').length;
-  const entCliente = list.filter(p => p.estado === 'Entregado a reparto').length;
+  const total       = list.length;
+  const pendiente   = list.filter(p => p.estado === 'Pendiente').length;
+  const completado  = list.filter(p => p.estado === 'Completado').length;
+  const enTaller    = list.filter(p => p.estado === 'En taller').length;
+  const entMontador = list.filter(p => p.estado === 'Entregado a montador').length;
+  const entCliente  = list.filter(p => p.estado === 'Entregado a reparto').length;
 
   document.getElementById('kpiTotalNum').textContent       = total;
   document.getElementById('kpiPendienteNum').textContent   = pendiente;
@@ -105,58 +102,52 @@ let charts = {};
 
 function countBy(list, key) {
   return list.reduce((acc, p) => {
-    const v = p[key] || '—';
-    acc[v] = (acc[v] || 0) + 1;
-    return acc;
+    const v = p[key] || '—'; acc[v] = (acc[v] || 0) + 1; return acc;
   }, {});
 }
 
 function initCharts() {
   if (typeof Chart === 'undefined') return;
   Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  Chart.defaults.color = '#64748b';
+  Chart.defaults.color = '#7a90b8';
   Chart.defaults.plugins.legend.display = false;
 
-  // Donut - Estado
   charts.estado = new Chart(document.getElementById('chartEstado'), {
     type: 'doughnut',
-    data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }] },
+    data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 2, borderColor: '#111827', hoverOffset: 6 }] },
     options: {
       responsive: true, maintainAspectRatio: false, cutout: '62%',
       plugins: {
-        legend: { display: true, position: 'bottom', labels: { padding: 16, boxWidth: 12 } },
+        legend: { display: true, position: 'bottom', labels: { padding: 16, boxWidth: 12, color: '#7a90b8' } },
         tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} pedidos` } },
       },
       onClick: (e, els) => {
         if (!els.length) { state.chartFilter = { type: '', value: '' }; renderAll(); return; }
         const label = charts.estado.data.labels[els[0].index];
-        if (state.chartFilter.type === 'estado' && state.chartFilter.value === label) {
-          state.chartFilter = { type: '', value: '' };
-        } else {
-          state.chartFilter = { type: 'estado', value: label };
-        }
+        state.chartFilter = (state.chartFilter.type === 'estado' && state.chartFilter.value === label)
+          ? { type: '', value: '' }
+          : { type: 'estado', value: label };
         renderAll();
       },
     },
   });
 
-  // Line - Timeline (last 30 days)
   charts.timeline = new Chart(document.getElementById('chartTimeline'), {
     type: 'line',
     data: {
       labels: [],
       datasets: [{
-        data: [], borderColor: '#3b82f6', backgroundColor: '#3b82f618',
-        borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#3b82f6',
-        fill: true, tension: 0.3,
+        data: [], borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,.1)',
+        borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#4f8ef7',
+        fill: true, tension: 0.4,
       }],
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y} pedidos` } } },
       scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
+        x: { grid: { display: false }, ticks: { color: '#7a90b8' } },
+        y: { beginAtZero: true, ticks: { stepSize: 1, color: '#7a90b8' }, grid: { color: 'rgba(255,255,255,.05)' } },
       },
     },
   });
@@ -164,45 +155,37 @@ function initCharts() {
 
 function updateCharts(list) {
   if (!charts.estado) return;
-  // Estado donut
-  const byEstado = countBy(list, 'estado');
-  const estadoLabels = ESTADOS.filter(k => byEstado[k] !== undefined);
-  charts.estado.data.labels = estadoLabels;
-  charts.estado.data.datasets[0].data = estadoLabels.map(k => byEstado[k] || 0);
-  charts.estado.data.datasets[0].backgroundColor = estadoLabels.map(k => COLORS[k]);
+  const byEstado     = countBy(list, 'estado');
+  const estadoLabels = ESTADOS.filter(k => byEstado[k]);
+  charts.estado.data.labels                        = estadoLabels;
+  charts.estado.data.datasets[0].data              = estadoLabels.map(k => byEstado[k] || 0);
+  charts.estado.data.datasets[0].backgroundColor   = estadoLabels.map(k => COLORS[k]);
   charts.estado.update();
 
-
-  // Timeline - last 30 days
   const today = new Date(); today.setHours(23, 59, 59, 999);
   const d30   = new Date(today); d30.setDate(d30.getDate() - 29); d30.setHours(0, 0, 0, 0);
-  const days = [];
-  for (let d = new Date(d30); d <= today; d.setDate(d.getDate() + 1))
-    days.push(new Date(d));
-
+  const days  = [];
+  for (let d = new Date(d30); d <= today; d.setDate(d.getDate() + 1)) days.push(new Date(d));
   const byDay = {};
   days.forEach(d => { byDay[fmt(d)] = 0; });
   list.forEach(p => {
     const dt = parseFecha(p.fecha);
-    if (dt >= d30 && dt <= today) {
-      const key = fmt(dt);
-      if (key in byDay) byDay[key]++;
-    }
+    if (dt >= d30 && dt <= today) { const k = fmt(dt); if (k in byDay) byDay[k]++; }
   });
-  charts.timeline.data.labels = days.map(fmt);
-  charts.timeline.data.datasets[0].data = days.map(d => byDay[fmt(d)]);
+  charts.timeline.data.labels              = days.map(fmt);
+  charts.timeline.data.datasets[0].data   = days.map(d => byDay[fmt(d)]);
   charts.timeline.update();
 }
 
-// ─── Active filter chips ──────────────────────────────────────────────────────
+// ─── Chips ───────────────────────────────────────────────────────────────────
 function renderChips() {
   const container = document.getElementById('activeChips');
   const chips = [];
-  if (state.montador)             chips.push({ label: `Montador: ${state.montador}`,   clear: () => { state.montador = ''; document.getElementById('fMontador').value = ''; } });
-  if (state.estado)               chips.push({ label: `Estado: ${state.estado}`,       clear: () => { state.estado   = ''; document.getElementById('fEstado').value   = ''; } });
-  if (state.desde)                chips.push({ label: `Desde: ${state.desde}`,         clear: () => { state.desde    = ''; document.getElementById('fDesde').value    = ''; } });
-  if (state.hasta)                chips.push({ label: `Hasta: ${state.hasta}`,         clear: () => { state.hasta    = ''; document.getElementById('fHasta').value    = ''; } });
-  if (state.chartFilter.value)    chips.push({ label: `Gráfica: ${state.chartFilter.value}`, clear: () => { state.chartFilter = { type: '', value: '' }; } });
+  if (state.montador)          chips.push({ label: `Montador: ${state.montador}`, clear: () => { state.montador = ''; document.getElementById('fMontador').value = ''; } });
+  if (state.estado)            chips.push({ label: `Estado: ${state.estado}`,     clear: () => { state.estado   = ''; document.getElementById('fEstado').value   = ''; } });
+  if (state.desde)             chips.push({ label: `Desde: ${state.desde}`,       clear: () => { state.desde    = ''; document.getElementById('fDesde').value    = ''; } });
+  if (state.hasta)             chips.push({ label: `Hasta: ${state.hasta}`,       clear: () => { state.hasta    = ''; document.getElementById('fHasta').value    = ''; } });
+  if (state.chartFilter.value) chips.push({ label: `Gráfica: ${state.chartFilter.value}`, clear: () => { state.chartFilter = { type: '', value: '' }; } });
 
   if (!chips.length) { container.innerHTML = ''; return; }
   container.innerHTML = chips.map((c, i) =>
@@ -229,8 +212,8 @@ function sortList(list) {
 function renderTable(list) {
   const sorted = sortList(list);
   document.getElementById('tableCount').textContent = `${sorted.length} pedido${sorted.length !== 1 ? 's' : ''}`;
-
   const tbody = document.getElementById('tableBody');
+
   if (!sorted.length) {
     tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">No hay pedidos con los filtros seleccionados</td></tr>`;
     return;
@@ -238,9 +221,11 @@ function renderTable(list) {
 
   tbody.innerHTML = sorted.map(p => {
     let dibujoHtml = '—';
-    if (p.fileData && p.fileType?.startsWith('image/'))
-      dibujoHtml = `<img src="${p.fileData}" class="table-thumb" data-action="ver" data-id="${p.id}" title="Ver dibujo" />`;
-    else if (p.fileData)
+    const imgUrl  = p.filePath ? getPublicUrl(p.filePath) : null;
+    const isImage = p.fileType?.startsWith('image/') || /\.(jpg|jpeg|png|svg|webp)$/i.test(p.filePath || '');
+    if (imgUrl && isImage)
+      dibujoHtml = `<img src="${imgUrl}" class="table-thumb" data-action="ver" data-id="${p.id}" title="Ver dibujo" />`;
+    else if (imgUrl)
       dibujoHtml = `<span style="cursor:pointer;font-size:20px" data-action="ver" data-id="${p.id}" title="${escHtml(p.fileName)}">📄</span>`;
 
     return `<tr>
@@ -252,9 +237,7 @@ function renderTable(list) {
       <td style="text-align:center">${escHtml(p.cantidad)}</td>
       <td>
         <select class="estado-select-table" data-id="${p.id}">
-          ${ESTADOS.map(s =>
-            `<option value="${s}"${s === p.estado ? ' selected' : ''}>${s}</option>`
-          ).join('')}
+          ${ESTADOS.map(s => `<option value="${s}"${s === p.estado ? ' selected' : ''}>${s}</option>`).join('')}
         </select>
       </td>
       <td style="text-align:center">${dibujoHtml}</td>
@@ -270,12 +253,10 @@ function renderTable(list) {
   }).join('');
 }
 
-// ─── Dropdown population ─────────────────────────────────────────────────────
+// ─── Dropdowns ───────────────────────────────────────────────────────────────
 function populateDropdowns() {
-  const all = getPedidos();
-  const montadores = [...new Set(all.map(p => p.montador).filter(Boolean))].sort();
-
-  const fM = document.getElementById('fMontador');
+  const montadores = [...new Set(allPedidos.map(p => p.montador).filter(Boolean))].sort();
+  const fM  = document.getElementById('fMontador');
   const cur = fM.value;
   fM.innerHTML = '<option value="">Todos</option>' + montadores.map(m => `<option value="${escHtml(m)}">${escHtml(m)}</option>`).join('');
   fM.value = cur;
@@ -291,78 +272,82 @@ function updateSortHeaders() {
 }
 
 // ─── Main render ─────────────────────────────────────────────────────────────
+async function loadAndRender() {
+  allPedidos = await getPedidos();
+  populateDropdowns();
+  renderAll();
+}
+
 function renderAll() {
   const list = getFiltered();
-  try { renderKPIs(list); } catch(e) { console.error('renderKPIs:', e); }
-  try { updateCharts(list); } catch(e) { console.error('updateCharts:', e); }
-  try { renderTable(list); } catch(e) { console.error('renderTable:', e); }
-  try { renderChips(); } catch(e) { console.error('renderChips:', e); }
+  try { renderKPIs(list); }    catch(e) { console.error('renderKPIs:', e); }
+  try { updateCharts(list); }  catch(e) { console.error('updateCharts:', e); }
+  try { renderTable(list); }   catch(e) { console.error('renderTable:', e); }
+  try { renderChips(); }       catch(e) { console.error('renderChips:', e); }
   try { updateSortHeaders(); } catch(e) { console.error('updateSortHeaders:', e); }
 }
 
-// ─── Event listeners (solo si es admin) ──────────────────────────────────────
+// ─── Events ──────────────────────────────────────────────────────────────────
 if (!isAdminVerified) throw new Error('stop');
+
 document.getElementById('fMontador').addEventListener('change', e => { state.montador = e.target.value; renderAll(); });
 document.getElementById('fEstado').addEventListener('change',   e => { state.estado   = e.target.value; renderAll(); });
 document.getElementById('fDesde').addEventListener('change',    e => { state.desde    = e.target.value; renderAll(); });
 document.getElementById('fHasta').addEventListener('change',    e => { state.hasta    = e.target.value; renderAll(); });
 document.getElementById('tableSearch').addEventListener('input', e => { state.search  = e.target.value; renderAll(); });
 
-document.getElementById('refreshBtn').addEventListener('click', () => {
-  populateDropdowns();
-  renderAll();
+document.getElementById('refreshBtn').addEventListener('click', async () => {
+  await loadAndRender();
   showToast('Dashboard actualizado');
 });
 
 document.getElementById('fReset').addEventListener('click', () => {
-  state.montador = ''; state.estado = '';
-  state.desde = ''; state.hasta = ''; state.chartFilter = { type: '', value: '' }; state.search = '';
+  state.montador = ''; state.estado = ''; state.desde = ''; state.hasta = '';
+  state.chartFilter = { type: '', value: '' }; state.search = '';
   ['fMontador','fEstado','fDesde','fHasta'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('tableSearch').value = '';
   renderAll();
 });
 
-// Table events (delegation)
-document.getElementById('ordersTable').addEventListener('click', e => {
+document.getElementById('ordersTable').addEventListener('click', async e => {
   const btn = e.target.closest('[data-action]');
-  if (!btn) return;
+  if (!btn || btn.dataset.action === 'nota') return;
   const id = Number(btn.dataset.id);
   if (btn.dataset.action === 'ver') {
-    const p = getPedidos().find(p => p.id === id);
+    const p = allPedidos.find(p => p.id === id);
     if (p) openModal(p);
   }
   if (btn.dataset.action === 'del') {
     if (!confirm('¿Eliminar este pedido?')) return;
-    savePedidos(getPedidos().filter(p => p.id !== id));
+    await deletePedido(id);
+    allPedidos = allPedidos.filter(p => p.id !== id);
     populateDropdowns();
     showToast('Pedido eliminado');
     renderAll();
   }
 });
 
-document.getElementById('ordersTable').addEventListener('change', e => {
+document.getElementById('ordersTable').addEventListener('change', async e => {
   const sel = e.target.closest('.estado-select-table');
   if (!sel) return;
   const id = Number(sel.dataset.id);
-  const list = getPedidos();
-  const p = list.find(p => p.id === id);
-  if (p) { p.estado = sel.value; savePedidos(list); showToast(`Estado: ${p.estado}`); renderAll(); }
+  const p  = allPedidos.find(p => p.id === id);
+  if (!p) return;
+  p.estado = sel.value;
+  await updatePedidoField(id, { estado: p.estado });
+  showToast(`Estado: ${p.estado}`);
+  renderAll();
 });
 
-// Sort headers
 document.querySelectorAll('#ordersTable .sortable').forEach(th => {
   th.addEventListener('click', () => {
     const col = th.dataset.col;
-    if (state.sort.col === col) {
-      state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
-    } else {
-      state.sort.col = col; state.sort.dir = 'desc';
-    }
+    if (state.sort.col === col) state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
+    else { state.sort.col = col; state.sort.dir = 'desc'; }
     renderAll();
   });
 });
 
-// Modal
 document.getElementById('modalClose').addEventListener('click', () =>
   document.getElementById('modalOverlay').style.display = 'none');
 document.getElementById('modalOverlay').addEventListener('click', e => {
@@ -370,44 +355,41 @@ document.getElementById('modalOverlay').addEventListener('click', e => {
     document.getElementById('modalOverlay').style.display = 'none';
 });
 
-// Clear all
-document.getElementById('clearAllBtn').addEventListener('click', () => {
+document.getElementById('clearAllBtn').addEventListener('click', async () => {
   if (!confirm('¿Borrar TODOS los pedidos? Esta acción no se puede deshacer.')) return;
-  savePedidos([]);
+  await deleteAllPedidos();
+  allPedidos = [];
   populateDropdowns();
   showToast('Todos los pedidos eliminados');
   renderAll();
 });
 
-// Export CSV
 document.getElementById('exportCsv').addEventListener('click', () => {
-  const list = sortList(getFiltered());
-  const headers = ['ID','Montador','Fecha','Cantidad','Cristal Fijo','Referencia','RAL','Estado','Notas'];
-  const rows = list.map(p => [
-    p.id, p.montador, p.fecha, p.cantidad, p.cristalFijo ?? '', p.referencia || '', p.ral || '', p.estado, p.notas || '',
+  const list    = sortList(getFiltered());
+  const headers = ['ID','Montador','Fecha','Cantidad','Cristal Fijo','Referencia','RAL','Estado','Notas','Nota Taller'];
+  const rows    = list.map(p => [
+    p.id, p.montador, p.fecha, p.cantidad, p.cristalFijo ?? '',
+    p.referencia || '', p.ral || '', p.estado, p.notas || '', p.notaAdmin || '',
   ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
   const csv = [headers.join(','), ...rows].join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+  const a   = document.createElement('a');
+  a.href    = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
   a.download = `pedidos_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 });
 
-// ─── Users table ─────────────────────────────────────────────────────────────
-function renderUsers() {
-  const users   = JSON.parse(localStorage.getItem('users') || '[]');
-  const pedidos = getPedidos();
-  const tbody   = document.getElementById('usersBody');
-
+// ─── Users ────────────────────────────────────────────────────────────────────
+async function renderUsers() {
+  const users = await getDbUsers();
+  const tbody = document.getElementById('usersBody');
   document.getElementById('usersCount').textContent = `${users.length} usuario${users.length !== 1 ? 's' : ''}`;
 
   if (!users.length) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">No hay usuarios registrados</td></tr>`;
     return;
   }
-
   tbody.innerHTML = users.map(u => {
-    const count = pedidos.filter(p => p.userId === u.id).length;
+    const count    = allPedidos.filter(p => p.userId === u.id).length;
     const rolBadge = u.role === 'admin'
       ? `<span class="badge badge-blue">Admin</span>`
       : `<span class="badge badge-gray">Montador</span>`;
@@ -417,9 +399,7 @@ function renderUsers() {
       <td>${rolBadge}</td>
       <td class="td-sm">${escHtml(u.creadoEl || '—')}</td>
       <td style="text-align:center">${count}</td>
-      <td>
-        <button class="icon-btn del" data-action="del-user" data-id="${u.id}" title="Eliminar usuario">🗑️</button>
-      </td>
+      <td><button class="icon-btn del" data-action="del-user" data-id="${u.id}" title="Eliminar usuario">🗑️</button></td>
     </tr>`;
   }).join('');
 }
@@ -428,28 +408,27 @@ document.getElementById('usersToggle').addEventListener('click', () => {
   const panel   = document.getElementById('usersCollapsible');
   const chevron = document.getElementById('usersChevron');
   const open    = panel.style.display === 'none';
-  panel.style.display  = open ? '' : 'none';
+  panel.style.display     = open ? '' : 'none';
   chevron.style.transform = open ? 'rotate(90deg)' : '';
 });
 
-document.getElementById('usersTable').addEventListener('click', e => {
+document.getElementById('usersTable').addEventListener('click', async e => {
   const btn = e.target.closest('[data-action="del-user"]');
   if (!btn) return;
-  const id = Number(btn.dataset.id);
-  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const id    = Number(btn.dataset.id);
+  const users = await getDbUsers();
   const user  = users.find(u => u.id === id);
-  if (!user) return;
-  if (!confirm(`¿Eliminar al usuario "${user.nombre}"? Sus pedidos no se borrarán.`)) return;
-  localStorage.setItem('users', JSON.stringify(users.filter(u => u.id !== id)));
+  if (!user || !confirm(`¿Eliminar al usuario "${user.nombre}"? Sus pedidos no se borrarán.`)) return;
+  await deleteDbUser(id);
   showToast(`Usuario "${user.nombre}" eliminado`);
   renderUsers();
 });
 
-// ─── Note modal ──────────────────────────────────────────────────────────────
+// ─── Note modal ───────────────────────────────────────────────────────────────
 let noteTargetId = null;
 
 function openNoteModal(id) {
-  const p = getPedidos().find(p => p.id === id);
+  const p = allPedidos.find(p => p.id === id);
   if (!p) return;
   noteTargetId = id;
   document.getElementById('noteModalTitle').textContent = `Nota — Pedido #${id}`;
@@ -469,39 +448,34 @@ document.getElementById('noteModalOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('noteModalOverlay')) closeNoteModal();
 });
 
-document.getElementById('noteModalSave').addEventListener('click', () => {
+document.getElementById('noteModalSave').addEventListener('click', async () => {
   if (!noteTargetId) return;
-  const list = getPedidos();
-  const p = list.find(p => p.id === noteTargetId);
-  if (!p) return;
-  p.notaAdmin = document.getElementById('noteTextarea').value.trim();
-  savePedidos(list);
+  const nota = document.getElementById('noteTextarea').value.trim();
+  await updatePedidoField(noteTargetId, { notaAdmin: nota });
+  const p = allPedidos.find(p => p.id === noteTargetId);
+  if (p) p.notaAdmin = nota;
   closeNoteModal();
   renderAll();
   showToast('Nota guardada');
 });
 
-// Ctrl+Enter to save note
 document.getElementById('noteTextarea').addEventListener('keydown', e => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) document.getElementById('noteModalSave').click();
 });
 
-// Hook nota action into table click delegation
 document.getElementById('ordersTable').addEventListener('click', e => {
   const btn = e.target.closest('[data-action="nota"]');
-  if (!btn) return;
-  openNoteModal(Number(btn.dataset.id));
+  if (btn) openNoteModal(Number(btn.dataset.id));
 }, true);
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
+// ─── Init + Realtime ──────────────────────────────────────────────────────────
 if (isAdminVerified) {
-  populateDropdowns();
   initCharts();
-  renderAll();
-  renderUsers();
+  loadAndRender().then(() => renderUsers());
 
-  window.addEventListener('storage', e => {
-    if (e.key === 'pedidos') { populateDropdowns(); renderAll(); }
-    if (e.key === 'users')   { renderUsers(); }
+  subscribePedidos(async () => {
+    allPedidos = await getPedidos();
+    populateDropdowns();
+    renderAll();
   });
 }
