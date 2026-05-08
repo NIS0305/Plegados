@@ -151,6 +151,10 @@ function openModal(pedido) {
       <div class="detail-label">Notas</div>
       <div class="detail-value">${escHtml(pedido.notas)}</div>
     </div>` : ''}
+    ${pedido.notaAdmin ? `<div class="detail-row">
+      <div class="detail-label" style="color:#4f8ef7">Nota del taller</div>
+      <div class="detail-value" style="padding:8px 12px;background:rgba(79,142,247,.08);border-left:3px solid #4f8ef7;border-radius:0 6px 6px 0">${escHtml(pedido.notaAdmin)}</div>
+    </div>` : ''}
     ${imgHtml}
   `;
   document.getElementById('modalOverlay').style.display = 'flex';
@@ -351,6 +355,7 @@ if (form) {
             ${fileHtml}
           </div>
           ${p.notas ? `<p style="margin-top:8px;font-size:13px;color:var(--text-dim)">📝 ${escHtml(p.notas)}</p>` : ''}
+          ${p.notaAdmin ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(79,142,247,.08);border-left:3px solid #4f8ef7;border-radius:0 6px 6px 0;font-size:13px;color:#c5d0e8"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#4f8ef7;display:block;margin-bottom:2px">Nota del taller</span>${escHtml(p.notaAdmin)}</div>` : ''}
           ${renderMontadorStepper(p.estado)}
         </div>
         <div class="pedido-actions">
