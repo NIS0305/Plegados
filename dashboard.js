@@ -35,6 +35,7 @@ const state = {
 };
 
 let allPedidos = [];
+let allUsers   = [];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function parseFecha(str) {
@@ -273,18 +274,19 @@ function updateSortHeaders() {
 
 // ─── Main render ─────────────────────────────────────────────────────────────
 async function loadAndRender() {
-  allPedidos = await getPedidos();
+  [allPedidos, allUsers] = await Promise.all([getPedidos(), getDbUsers()]);
   populateDropdowns();
   renderAll();
 }
 
 function renderAll() {
   const list = getFiltered();
-  try { renderKPIs(list); }    catch(e) { console.error('renderKPIs:', e); }
-  try { updateCharts(list); }  catch(e) { console.error('updateCharts:', e); }
-  try { renderTable(list); }   catch(e) { console.error('renderTable:', e); }
-  try { renderChips(); }       catch(e) { console.error('renderChips:', e); }
-  try { updateSortHeaders(); } catch(e) { console.error('updateSortHeaders:', e); }
+  try { renderKPIs(list); }           catch(e) { console.error('renderKPIs:', e); }
+  try { updateCharts(list); }         catch(e) { console.error('updateCharts:', e); }
+  try { renderTable(list); }          catch(e) { console.error('renderTable:', e); }
+  try { renderChips(); }              catch(e) { console.error('renderChips:', e); }
+  try { updateSortHeaders(); }        catch(e) { console.error('updateSortHeaders:', e); }
+  try { renderAlmacenSection(); }     catch(e) { console.error('renderAlmacenSection:', e); }
 }
 
 // ─── Events ──────────────────────────────────────────────────────────────────
@@ -378,6 +380,98 @@ document.getElementById('exportCsv').addEventListener('click', () => {
   a.click();
 });
 
+// ─── Almacén section ──────────────────────────────────────────────────────────
+function getAlmacenPedidos() {
+  const almacenIds = new Set(allUsers.filter(u => u.role === 'almacen').map(u => u.id));
+  return allPedidos.filter(p => almacenIds.has(p.userId));
+}
+
+function renderAlmacenSection() {
+  const pedidos = getAlmacenPedidos();
+  const countEl = document.getElementById('almacenCount');
+  if (countEl) countEl.textContent = `${pedidos.length} pedido${pedidos.length !== 1 ? 's' : ''}`;
+
+  const tbody = document.getElementById('almacenBody');
+  if (!tbody) return;
+
+  if (!pedidos.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">No hay pedidos de almacén</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = pedidos.map(p => {
+    let dibujoHtml = '—';
+    const imgUrl  = p.filePath ? getPublicUrl(p.filePath) : null;
+    const isImage = p.fileType?.startsWith('image/') || /\.(jpg|jpeg|png|svg|webp)$/i.test(p.filePath || '');
+    if (imgUrl && isImage)
+      dibujoHtml = `<img src="${imgUrl}" class="table-thumb" data-action="ver" data-id="${p.id}" title="Ver dibujo" />`;
+    else if (imgUrl)
+      dibujoHtml = `<span style="cursor:pointer;font-size:20px" data-action="ver" data-id="${p.id}" title="${escHtml(p.fileName)}">📄</span>`;
+
+    return `<tr>
+      <td class="td-id">#${p.id}</td>
+      <td><strong>${escHtml(p.montador)}</strong></td>
+      <td class="td-sm">${escHtml(p.fecha)}</td>
+      <td class="td-sm">${escHtml(p.referencia) || '—'}</td>
+      <td class="td-sm">${escHtml(p.ral) || '—'}</td>
+      <td style="text-align:center">${escHtml(p.cantidad)}</td>
+      <td>
+        <select class="estado-select-table" data-id="${p.id}">
+          ${ESTADOS.map(s => `<option value="${s}"${s === p.estado ? ' selected' : ''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td style="text-align:center">${dibujoHtml}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="icon-btn" data-action="ver" data-id="${p.id}" title="Detalle">🔍</button>
+          <button class="icon-btn${p.notaAdmin ? ' nota-activa' : ''}" data-action="nota" data-id="${p.id}" title="${p.notaAdmin ? 'Editar nota' : 'Agregar nota'}" style="${p.notaAdmin ? 'color:#4f8ef7;border-color:#4f8ef7' : ''}">✏️</button>
+          <button class="icon-btn del" data-action="del" data-id="${p.id}" title="Eliminar">🗑️</button>
+        </div>
+        ${p.notaAdmin ? `<div style="margin-top:5px;font-size:11px;color:#7a90b8;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.notaAdmin)}">📝 ${escHtml(p.notaAdmin)}</div>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('almacenToggle').addEventListener('click', () => {
+  const panel   = document.getElementById('almacenCollapsible');
+  const chevron = document.getElementById('almacenChevron');
+  const open    = panel.style.display === 'none';
+  panel.style.display     = open ? '' : 'none';
+  chevron.style.transform = open ? 'rotate(90deg)' : '';
+});
+
+document.getElementById('almacenTable').addEventListener('click', async e => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  if (btn.dataset.action === 'ver') {
+    const p = allPedidos.find(p => p.id === id);
+    if (p) openModal(p);
+  }
+  if (btn.dataset.action === 'nota') openNoteModal(id);
+  if (btn.dataset.action === 'del') {
+    if (!confirm('¿Eliminar este pedido?')) return;
+    await deletePedido(id);
+    allPedidos = allPedidos.filter(p => p.id !== id);
+    populateDropdowns();
+    showToast('Pedido eliminado');
+    renderAll();
+  }
+});
+
+document.getElementById('almacenTable').addEventListener('change', async e => {
+  const sel = e.target.closest('.estado-select-table');
+  if (!sel) return;
+  const id = Number(sel.dataset.id);
+  const p  = allPedidos.find(p => p.id === id);
+  if (!p) return;
+  p.estado = sel.value;
+  await updatePedidoField(id, { estado: p.estado });
+  showToast(`Estado: ${p.estado}`);
+  renderAll();
+});
+
 // ─── Users ────────────────────────────────────────────────────────────────────
 async function renderUsers() {
   const users = await getDbUsers();
@@ -420,8 +514,10 @@ document.getElementById('usersTable').addEventListener('click', async e => {
   const user  = users.find(u => u.id === id);
   if (!user || !confirm(`¿Eliminar al usuario "${user.nombre}"? Sus pedidos no se borrarán.`)) return;
   await deleteDbUser(id);
+  allUsers = allUsers.filter(u => u.id !== id);
   showToast(`Usuario "${user.nombre}" eliminado`);
   renderUsers();
+  renderAlmacenSection();
 });
 
 // ─── Note modal ───────────────────────────────────────────────────────────────

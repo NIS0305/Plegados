@@ -17,7 +17,8 @@ function logout() {
   window.location.href = 'login.html';
 }
 
-const ADMIN_CODE = 'PLEGADO_ADMIN';
+const ADMIN_CODE   = 'PLEGADO_ADMIN';
+const ALMACEN_CODE = 'PLEGADO_ALMACEN';
 
 function requireAuth() {
   const u = getCurrentUser();
@@ -37,7 +38,8 @@ async function registerUser(nombre, email, password, adminCode = '') {
     .select('id').eq('email', email.trim().toLowerCase()).maybeSingle();
   if (existing) throw new Error('Ya existe una cuenta con ese email.');
 
-  const role = adminCode.trim() === ADMIN_CODE ? 'admin' : 'montador';
+  const code = (adminCode || '').trim();
+  const role = code === ADMIN_CODE ? 'admin' : code === ALMACEN_CODE ? 'almacen' : 'montador';
   const user = {
     id:           Date.now(),
     nombre:       nombre.trim(),
