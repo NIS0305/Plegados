@@ -14,7 +14,9 @@
       <a href="index.html" class="nav-link">Nuevo Pedido</a>
       <a href="dashboard.html" class="nav-link active">Dashboard</a>
     </div>
-    <div class="nav-user" id="navUserArea"></div>
+    <div class="nav-user" id="navUserArea">
+      <button class="btn btn-secondary btn-sm theme-toggle">☀️</button>
+    </div>
   </nav>
 
   <!-- Filter bar -->
@@ -84,40 +86,6 @@
       </div>
     </div>
 
-    <!-- KPI row entrega -->
-    <div class="kpi-row">
-      <div class="kpi-card kpi-indigo">
-        <span class="kpi-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-        </span>
-        <div class="kpi-body">
-          <span class="kpi-num" id="kpiTallerNum">0</span>
-          <span class="kpi-label">En taller</span>
-          <span class="kpi-pct" id="kpiTallerPct"></span>
-        </div>
-      </div>
-      <div class="kpi-card kpi-teal">
-        <span class="kpi-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </span>
-        <div class="kpi-body">
-          <span class="kpi-num" id="kpiEntMontadorNum">0</span>
-          <span class="kpi-label">Entregado a montador</span>
-          <span class="kpi-pct" id="kpiEntMontadorPct"></span>
-        </div>
-      </div>
-      <div class="kpi-card kpi-emerald">
-        <span class="kpi-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        </span>
-        <div class="kpi-body">
-          <span class="kpi-num" id="kpiEntClienteNum">0</span>
-          <span class="kpi-label">Entregado a reparto</span>
-          <span class="kpi-pct" id="kpiEntClientePct"></span>
-        </div>
-      </div>
-    </div>
-
     <!-- Charts 2x2 -->
     <div class="charts-grid">
       <div class="chart-card">
@@ -144,7 +112,7 @@
     <div class="table-card">
       <div class="table-topbar">
         <div>
-          <h3 class="chart-title" style="margin:0">Detalle de Pedidos</h3>
+          <h3 class="chart-title" style="margin:0">Pedidos de montadores</h3>
           <span class="table-count" id="tableCount"></span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -264,6 +232,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="theme.js"></script>
   <script src="chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase.js"></script>

@@ -837,3 +837,77 @@ select option { background: var(--surface); color: var(--text); }
   box-shadow: var(--shadow-lg);
 }
 .toast.show { opacity: 1; }
+
+/* ===== THEME TOGGLE BUTTON (floating, for auth pages) ===== */
+.theme-toggle-float {
+  position: fixed; top: 16px; right: 16px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 50%; width: 42px; height: 42px;
+  cursor: pointer; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; box-shadow: var(--shadow-md);
+  transition: background .15s, transform .15s;
+}
+.theme-toggle-float:hover { background: var(--surface-3); transform: scale(1.08); }
+
+/* ===== LIGHT THEME ===== */
+[data-theme="light"] {
+  --blue-light:   #dbeafe;
+  --green-light:  #dcfce7;
+  --yellow-light: #fef9c3;
+  --red-light:    #fee2e2;
+  --bg:           #f0f4f9;
+  --surface:      #ffffff;
+  --surface-2:    #f4f7fc;
+  --surface-3:    #e8eef7;
+  --border:       #d1dae8;
+  --border-2:     #b8c9de;
+  --text:         #0f172a;
+  --text-muted:   #5a7090;
+  --text-dim:     #334155;
+  --shadow:       0 2px 8px rgba(0,0,0,.08);
+  --shadow-md:    0 4px 16px rgba(0,0,0,.1);
+  --shadow-lg:    0 10px 40px rgba(0,0,0,.12);
+}
+
+[data-theme="light"] body { background: var(--bg); color: var(--text); }
+
+[data-theme="light"] .navbar {
+  background: rgba(255,255,255,.92);
+  border-bottom-color: var(--border);
+}
+[data-theme="light"] .bi-filterbar { background: rgba(240,244,249,.95); }
+
+[data-theme="light"] .kpi-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f4f7fc 100%);
+}
+[data-theme="light"] .kpi-card::before {
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,.04), transparent);
+}
+[data-theme="light"] .chart-card,
+[data-theme="light"] .table-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f4f7fc 100%);
+}
+[data-theme="light"] .bi-table th { background: rgba(230,238,248,.8); }
+[data-theme="light"] .bi-table tr:hover td { background: rgba(79,142,247,.04); }
+
+[data-theme="light"] .card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--blue);
+  box-shadow: 0 -3px 16px rgba(59,130,246,.15);
+}
+[data-theme="light"] .pedido-card { background: #ffffff; }
+[data-theme="light"] .auth-card { background: #ffffff; }
+[data-theme="light"] .auth-tab.active { background: #ffffff; }
+[data-theme="light"] .modal,
+[data-theme="light"] .modal-header { background: #ffffff; }
+[data-theme="light"] .upload-area { background: var(--surface-2); }
+[data-theme="light"] .upload-area:hover,
+[data-theme="light"] .upload-area.drag-over { background: var(--blue-light); }
+
+[data-theme="light"] .form-logo,
+[data-theme="light"] .auth-brand img { filter: brightness(0); }
+
+[data-theme="light"] select option { background: #ffffff; color: #0f172a; }
+[data-theme="light"] .toast { background: #1e293b; color: #ffffff; }
