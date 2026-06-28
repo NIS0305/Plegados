@@ -13,4 +13,4 @@ jobs:
       - name: Call Coolify webhook
         run: |
           curl --silent --show-error --fail \
-            -X GET "${{ secrets.COOLIFY_WEBHOOK_URL }}"
+            -X GET "https://coolify.tmisystem.com/api/v1/deploy?uuid=zx1tjgivvnwskrfzrm4kz3tf&force=false"
