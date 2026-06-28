@@ -173,6 +173,37 @@
       </div>
     </div>
 
+    <!-- Pedidos de almacén collapsible -->
+    <div class="table-card" style="margin-top:24px">
+      <div class="table-topbar" id="almacenToggle" style="cursor:pointer;user-select:none">
+        <div style="display:flex;align-items:center;gap:10px">
+          <h3 class="chart-title" style="margin:0">Pedidos de almacén</h3>
+          <span class="table-count" id="almacenCount"></span>
+        </div>
+        <span id="almacenChevron" style="font-size:18px;color:var(--text-muted);transition:transform .2s">▸</span>
+      </div>
+      <div id="almacenCollapsible" style="display:none">
+        <div class="table-wrap">
+          <table class="bi-table" id="almacenTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Solicitante</th>
+                <th>Fecha</th>
+                <th>Referencia</th>
+                <th>RAL</th>
+                <th>Cant.</th>
+                <th>Estado</th>
+                <th>Dibujo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="almacenBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- Users collapsible -->
     <div class="table-card" style="margin-top:24px">
       <div class="table-topbar" id="usersToggle" style="cursor:pointer;user-select:none">
