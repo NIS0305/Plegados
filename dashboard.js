@@ -78,24 +78,15 @@ function getFiltered() {
 
 // ─── KPIs ────────────────────────────────────────────────────────────────────
 function renderKPIs(list) {
-  const total       = list.length;
-  const pendiente   = list.filter(p => p.estado === 'Pendiente').length;
-  const completado  = list.filter(p => p.estado === 'Completado').length;
-  const enTaller    = list.filter(p => p.estado === 'En taller').length;
-  const entMontador = list.filter(p => p.estado === 'Entregado a montador').length;
-  const entCliente  = list.filter(p => p.estado === 'Entregado a reparto').length;
+  const total      = list.length;
+  const pendiente  = list.filter(p => p.estado === 'Pendiente').length;
+  const completado = list.filter(p => p.estado === 'Completado').length;
 
-  document.getElementById('kpiTotalNum').textContent       = total;
-  document.getElementById('kpiPendienteNum').textContent   = pendiente;
-  document.getElementById('kpiCompletadoNum').textContent  = completado;
-  document.getElementById('kpiTallerNum').textContent      = enTaller;
-  document.getElementById('kpiEntMontadorNum').textContent = entMontador;
-  document.getElementById('kpiEntClienteNum').textContent  = entCliente;
-  document.getElementById('kpiPendientePct').textContent   = pct(pendiente,   total);
-  document.getElementById('kpiCompletadoPct').textContent  = pct(completado,  total);
-  document.getElementById('kpiTallerPct').textContent      = pct(enTaller,    total);
-  document.getElementById('kpiEntMontadorPct').textContent = pct(entMontador, total);
-  document.getElementById('kpiEntClientePct').textContent  = pct(entCliente,  total);
+  document.getElementById('kpiTotalNum').textContent      = total;
+  document.getElementById('kpiPendienteNum').textContent  = pendiente;
+  document.getElementById('kpiCompletadoNum').textContent = completado;
+  document.getElementById('kpiPendientePct').textContent  = pct(pendiente,  total);
+  document.getElementById('kpiCompletadoPct').textContent = pct(completado, total);
 }
 
 // ─── Charts ──────────────────────────────────────────────────────────────────
