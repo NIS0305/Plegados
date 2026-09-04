@@ -10,10 +10,10 @@ Web app for managing metal sheet folding orders at **TMI Plegadores**. Montadore
 
 - **Frontend:** Vanilla HTML + CSS + JS — no build step, no bundler, no package.json.
 - **Backend:** Supabase (`bgigpjufjtclahbknuyx.supabase.co`) — PostgreSQL + Storage + Realtime.
-- **Deploy:** Vercel — `vercel.json` rewrites `/` → `login.html`.
+- **Deploy:** Coolify (self-hosted en VPS). Un push a `main` habilita el redeploy, que se dispara manualmente desde el panel de Coolify. `vercel.json` es residual de cuando se desplegaba en Vercel.
 - **Charts:** Chart.js bundled locally as `chart.umd.min.js`.
 
-There are no build, lint, or test commands. Open the HTML files directly in a browser or deploy to Vercel.
+There are no build, lint, or test commands. Open the HTML files directly in a browser; production deploys go through Coolify.
 
 ## Architecture
 
@@ -25,7 +25,7 @@ supabase.js  →  auth.js  →  app.js  →  dashboard.js  (dashboard only)
 
 - `_db` — global Supabase client instance (created in `supabase.js`)
 - `supabase.js` — entire data layer: `getPedidos`, `savePedido`, `updatePedidoField`, `deletePedido`, `uploadDibujo`, `getPublicUrl`, `subscribePedidos`, `getDbUsers`
-- `auth.js` — custom auth (NOT Supabase Auth): SHA-256 + salt `_plegado_chapa_v1`, sessionStorage sessions, `requireAuth()` / `requireAdmin()` route guards
+- `auth.js` — custom auth (NOT Supabase Auth): SHA-256 + salt `_plegado_chapa_v1`, sessionStorage sessions, `requireAuth()` / `requireAdmin()` route guards. Roles: `montador`, `admin`, `almacen`. El alta desde la interfaz crea SIEMPRE un `montador`; `admin` y `almacen` se asignan a mano en la base de datos (ver README.md)
 - `app.js` — shared utilities + all logic for `index.html` (new-order form + montador's own order history)
 - `dashboard.js` — all admin dashboard logic: KPIs, Chart.js charts, filters, inline status updates, notes modal
 
@@ -33,6 +33,7 @@ Pages:
 - `login.html` — montador login/register entry point
 - `admin.html` — admin **login only**. There is no admin self-registration: `registerUser()`
   always creates a `montador`. Promotion to `admin` is a manual DB operation — see README.md.
+- `almacen-login.html` — warehouse **login only** (no self-registration).
 - `index.html` — montador view: submit order, see own history
 - `dashboard.html` — admin view: full table, KPIs, charts, manage all orders
 
@@ -65,7 +66,7 @@ Pages:
   nombre: string,
   email: string,
   passwordHash: string,  // SHA-256 + salt '_plegado_chapa_v1'
-  role: 'admin' | 'montador',
+  role: 'admin' | 'montador' | 'almacen',
   creadoEl: string,
 }
 ```
