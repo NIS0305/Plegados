@@ -211,7 +211,10 @@ function sortList(list) {
 }
 
 function renderTable(list) {
-  const sorted = sortList(list);
+  // Los pedidos de cuentas de almacén (p.ej. los de email) van a su propia
+  // sección "Pedidos de almacén", no a la tabla de montadores.
+  const almacenIds = new Set(allUsers.filter(u => u.role === 'almacen').map(u => u.id));
+  const sorted = sortList(list.filter(p => !almacenIds.has(p.userId)));
   document.getElementById('tableCount').textContent = `${sorted.length} pedido${sorted.length !== 1 ? 's' : ''}`;
   const tbody = document.getElementById('tableBody');
 
