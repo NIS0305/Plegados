@@ -7,7 +7,7 @@ const _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 function rowToPedido(r) {
   return {
     id:          r.id,
-    userId:      r.user_id,
+    userId:      r.user_uid,
     fecha:       r.fecha,
     montador:    r.montador,
     cantidad:    r.cantidad,
@@ -26,16 +26,18 @@ function rowToPedido(r) {
 // ── Pedidos ───────────────────────────────────────────────────────────────────
 async function getPedidos(filter = {}) {
   let q = _db.from('pedidos').select('*').order('id', { ascending: false });
-  if (filter.userId) q = q.eq('user_id', filter.userId);
+  if (filter.userId) q = q.eq('user_uid', filter.userId);
   const { data, error } = await q;
   if (error) { console.error('getPedidos:', error); return []; }
   return (data || []).map(rowToPedido);
 }
 
 async function savePedido(pedido) {
-  const { error } = await _db.from('pedidos').upsert({
+  // insert (no upsert): la política RLS de INSERT por usuario no concede
+  // UPDATE al montador, así que un upsert fallaría. Ver MIGRACION-AUTH-RUNBOOK.md.
+  const { error } = await _db.from('pedidos').insert({
     id:           pedido.id,
-    user_id:      pedido.userId,
+    user_uid:     pedido.userId,
     fecha:        pedido.fecha,
     montador:     pedido.montador,
     cantidad:     pedido.cantidad,
@@ -70,35 +72,20 @@ async function deleteAllPedidos() {
   if (error) throw error;
 }
 
-// ── Users ─────────────────────────────────────────────────────────────────────
+// ── Usuarios (perfiles de Supabase Auth) ──────────────────────────────────────
+// Lee public.profiles. El email vive en auth.users y no es accesible desde el
+// cliente, así que la lista de usuarios del panel ya no muestra correo.
+// El alta y la baja de cuentas las gestiona Supabase Auth, no la aplicación.
 async function getDbUsers() {
-  const { data, error } = await _db.from('users').select('*').order('created_at');
+  const { data, error } = await _db.from('profiles').select('*').order('creado_el');
   if (error) { console.error('getDbUsers:', error); return []; }
   return (data || []).map(r => ({
-    id:           r.id,
-    nombre:       r.nombre,
-    email:        r.email,
-    passwordHash: r.password_hash,
-    role:         r.role,
-    creadoEl:     r.creado_el,
+    id:       r.id,
+    nombre:   r.nombre,
+    email:    '',
+    role:     r.role,
+    creadoEl: r.creado_el ? new Date(r.creado_el).toLocaleDateString('es-ES') : '',
   }));
-}
-
-async function insertDbUser(user) {
-  const { error } = await _db.from('users').insert({
-    id:            user.id,
-    nombre:        user.nombre,
-    email:         user.email,
-    password_hash: user.passwordHash,
-    role:          user.role,
-    creado_el:     user.creadoEl,
-  });
-  if (error) throw error;
-}
-
-async function deleteDbUser(id) {
-  const { error } = await _db.from('users').delete().eq('id', id);
-  if (error) throw error;
 }
 
 // ── Storage ───────────────────────────────────────────────────────────────────

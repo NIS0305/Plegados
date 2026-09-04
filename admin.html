@@ -41,8 +41,7 @@
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
   <script>
-    const existing = getCurrentUser();
-    if (existing && existing.role === 'admin') window.location.href = 'dashboard.html';
+    getSessionUser().then(u => { if (u && u.role === 'admin') window.location.href = 'dashboard.html'; });
 
     // Toggle password visibility
     document.querySelectorAll('.toggle-pass').forEach(btn => {
@@ -72,11 +71,11 @@
       try {
         const user = await loginUser(email, pass);
         if (user.role !== 'admin') {
+          await _db.auth.signOut();
           errEl.textContent = 'Acceso restringido a administradores.';
           btn.disabled = false; btn.textContent = 'Entrar';
           return;
         }
-        setCurrentUser(user);
         window.location.href = 'dashboard.html';
       } catch (err) {
         errEl.textContent = err.message;

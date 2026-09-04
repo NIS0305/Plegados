@@ -84,7 +84,7 @@
   <script src="auth.js"></script>
   <script>
     // Redirect if already logged in
-    if (getCurrentUser()) window.location.href = 'index.html';
+    getSessionUser().then(u => { if (u) window.location.href = u.role === 'admin' ? 'dashboard.html' : 'index.html'; });
 
     const tabs   = document.querySelectorAll('.auth-tab');
     const forms  = document.querySelectorAll('.auth-form');
@@ -121,7 +121,6 @@
       errEl.textContent = '';
       try {
         const user = await loginUser(email, pass);
-        setCurrentUser(user);
         window.location.href = user.role === 'admin' ? 'dashboard.html' : 'index.html';
       } catch (err) {
         errEl.textContent = err.message;
@@ -155,7 +154,6 @@
       btn.disabled = true; btn.textContent = 'Creando cuenta...';
       try {
         const user = await registerUser(nombre, email, pass);
-        setCurrentUser(user);
         window.location.href = user.role === 'admin' ? 'dashboard.html' : 'index.html';
       } catch (err) {
         errEl.textContent = err.message;

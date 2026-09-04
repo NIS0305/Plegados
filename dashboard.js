@@ -1,18 +1,9 @@
-// ─── Auth + Nav ──────────────────────────────────────────────────────────────
-let isAdminVerified = false;
-
-(function () {
-  const u = requireAdmin();
-  if (!u) return;
-  isAdminVerified = true;
-  const area = document.getElementById('navUserArea');
-  area.innerHTML = `
-    <span class="nav-avatar">${u.nombre.charAt(0).toUpperCase()}</span>
-    <span class="nav-username">${escHtml(u.nombre)}</span>
-    <span class="badge badge-blue" style="font-size:11px">Admin</span>
-    <button class="btn btn-secondary btn-sm" id="logoutBtn">Salir</button>`;
-  document.getElementById('logoutBtn').addEventListener('click', logout);
-})();
+// ─── Nav + arranque ───────────────────────────────────────────────────────────
+// La autenticación (requireAdmin) es ASÍNCRONA. El arranque real —render de la
+// barra superior, carga de datos e init de gráficas— vive en la IIFE async del
+// final del fichero. Aquí arriba solo quedan definiciones y listeners, que se
+// pueden enganchar antes de resolver la sesión sin efecto hasta que el usuario
+// interactúe (para entonces ya se resolvió el acceso o se redirigió).
 
 // ─── Borrado desde el panel ──────────────────────────────────────────────────
 // DESHABILITADO. Las políticas de seguridad a nivel de fila de la Parte 1.5
@@ -299,8 +290,6 @@ function renderAll() {
 }
 
 // ─── Events ──────────────────────────────────────────────────────────────────
-if (!isAdminVerified) throw new Error('stop');
-
 document.getElementById('fMontador').addEventListener('change', e => { state.montador = e.target.value; renderAll(); });
 document.getElementById('fEstado').addEventListener('change',   e => { state.estado   = e.target.value; renderAll(); });
 document.getElementById('fDesde').addEventListener('change',    e => { state.desde    = e.target.value; renderAll(); });
@@ -501,6 +490,8 @@ async function renderUsers() {
     const count    = allPedidos.filter(p => p.userId === u.id).length;
     const rolBadge = u.role === 'admin'
       ? `<span class="badge badge-blue">Admin</span>`
+      : u.role === 'almacen'
+      ? `<span class="badge badge-teal">Almacén</span>`
       : `<span class="badge badge-gray">Montador</span>`;
     return `<tr>
       <td><strong>${escHtml(u.nombre)}</strong></td>
@@ -521,20 +512,9 @@ document.getElementById('usersToggle').addEventListener('click', () => {
   chevron.style.transform = open ? 'rotate(90deg)' : '';
 });
 
-document.getElementById('usersTable').addEventListener('click', async e => {
-  const btn = e.target.closest('[data-action="del-user"]');
-  if (!btn) return;
-  if (!BORRADO_HABILITADO) return;   // ver BORRADO_HABILITADO al inicio del fichero
-  const id    = Number(btn.dataset.id);
-  const users = await getDbUsers();
-  const user  = users.find(u => u.id === id);
-  if (!user || !confirm(`¿Eliminar al usuario "${user.nombre}"? Sus pedidos no se borrarán.`)) return;
-  await deleteDbUser(id);
-  allUsers = allUsers.filter(u => u.id !== id);
-  showToast(`Usuario "${user.nombre}" eliminado`);
-  renderUsers();
-  renderAlmacenSection();
-});
+// Baja de usuarios: se gestiona en Supabase Auth (consola / API de administración),
+// no desde el panel. El botón de borrado de usuario no se renderiza
+// (BORRADO_HABILITADO = false); esta baja dejó de existir en la app.
 
 // ─── Note modal ───────────────────────────────────────────────────────────────
 let noteTargetId = null;
@@ -580,14 +560,26 @@ document.getElementById('ordersTable').addEventListener('click', e => {
   if (btn) openNoteModal(Number(btn.dataset.id));
 }, true);
 
-// ─── Init + Realtime ──────────────────────────────────────────────────────────
-if (isAdminVerified) {
+// ─── Arranque (auth async) + Realtime ─────────────────────────────────────────
+(async () => {
+  const u = await requireAdmin();
+  if (!u) return;   // requireAdmin ya redirige si no hay sesión o no es admin
+
+  const area = document.getElementById('navUserArea');
+  area.innerHTML = `
+    <span class="nav-avatar">${u.nombre.charAt(0).toUpperCase()}</span>
+    <span class="nav-username">${escHtml(u.nombre)}</span>
+    <span class="badge badge-blue" style="font-size:11px">Admin</span>
+    <button class="btn btn-secondary btn-sm" id="logoutBtn">Salir</button>`;
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+
   initCharts();
-  loadAndRender().then(() => renderUsers());
+  await loadAndRender();
+  renderUsers();
 
   subscribePedidos(async () => {
     allPedidos = await getPedidos();
     populateDropdowns();
     renderAll();
   });
-}
+})();

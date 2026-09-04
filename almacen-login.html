@@ -48,10 +48,7 @@
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
   <script>
-    const _existing = getCurrentUser();
-    if (_existing) {
-      window.location.href = _existing.role === 'admin' ? 'dashboard.html' : 'index.html';
-    }
+    getSessionUser().then(u => { if (u) window.location.href = u.role === 'admin' ? 'dashboard.html' : 'index.html'; });
 
     document.querySelectorAll('.toggle-pass').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -80,11 +77,11 @@
       try {
         const user = await loginUser(email, pass);
         if (user.role !== 'almacen') {
+          await _db.auth.signOut();
           errEl.textContent = 'Esta página es exclusiva para usuarios de almacén.';
           btn.disabled = false; btn.textContent = 'Entrar';
           return;
         }
-        setCurrentUser(user);
         window.location.href = 'index.html';
       } catch (err) {
         errEl.textContent = err.message;

@@ -139,9 +139,9 @@ function openModal(pedido) {
 
 // ===== FORM PAGE =====
 const form = document.getElementById('pedidoForm');
-if (form) {
-  const currentUser = requireAuth();
-  if (!currentUser) throw new Error('Not authenticated');
+if (form) (async () => {
+  const currentUser = await requireAuth();
+  if (!currentUser) return;   // requireAuth ya redirige a login.html
 
   document.getElementById('navUsername').textContent = currentUser.nombre;
   document.getElementById('navAvatar').textContent   = currentUser.nombre.charAt(0).toUpperCase();
@@ -355,4 +355,4 @@ if (form) {
   subscribePedidos(() => renderMyOrders());
 
   renderMyOrders();
-}
+})();
