@@ -1,5 +1,8 @@
 /* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* El atributo hidden debe ganar a cualquier display de clase (p.ej. .btn
+   fuerza inline-flex y dejaba visible un boton marcado como hidden). */
+[hidden] { display: none !important; }
 
 :root {
   --blue: #4f8ef7;
