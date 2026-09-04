@@ -31,10 +31,10 @@ supabase.js  →  auth.js  →  app.js  →  dashboard.js  (dashboard only)
 
 Pages:
 - `login.html` — montador login/register entry point
-- `admin.html` — admin login/register (requires secret code `PLEGADO_ADMIN`)
+- `admin.html` — admin **login only**. There is no admin self-registration: `registerUser()`
+  always creates a `montador`. Promotion to `admin` is a manual DB operation — see README.md.
 - `index.html` — montador view: submit order, see own history
 - `dashboard.html` — admin view: full table, KPIs, charts, manage all orders
-- `seed.html` — dev utility to insert test data (uses localStorage, not Supabase)
 
 ## Data models
 

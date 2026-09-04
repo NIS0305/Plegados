@@ -14,6 +14,24 @@ let isAdminVerified = false;
   document.getElementById('logoutBtn').addEventListener('click', logout);
 })();
 
+// ─── Borrado desde el panel ──────────────────────────────────────────────────
+// DESHABILITADO. Las políticas de seguridad a nivel de fila de la Parte 1.5
+// (MIGRACION-SEGURIDAD.md) deniegan DELETE sobre `pedidos` y `users`. Con el
+// borrado denegado en la base de datos, los botones del panel no deben mostrarse:
+// PostgREST NO devuelve error cuando una política bloquea un DELETE (responde 204
+// con cero filas), así que `if (error) throw` no saltaría y el panel diría
+// "eliminado" mientras el dato sigue ahí. El flag en false retira los botones y
+// evita esa promesa falsa.
+//
+// Secuencia de despliegue: primero este cambio (flag=false) en producción, y
+// solo entonces aplicar el bloque SQL en la consola. Dar de baja un pedido o un
+// usuario pasa a ser una operación manual en la base de datos (ver README.md).
+//
+// Para reactivar el borrado en el panel harían falta LAS DOS COSAS: poner este
+// flag a true Y restaurar las políticas DELETE. Solo lo primero reproduce el
+// fallo silencioso descrito arriba.
+const BORRADO_HABILITADO = false;
+
 const COLORS = {
   'Pendiente':            '#f59e0b',
   'En proceso':           '#3b82f6',
@@ -237,7 +255,7 @@ function renderTable(list) {
         <div style="display:flex;gap:4px">
           <button class="icon-btn" data-action="ver" data-id="${p.id}" title="Detalle">🔍</button>
           <button class="icon-btn${p.notaAdmin ? ' nota-activa' : ''}" data-action="nota" data-id="${p.id}" title="${p.notaAdmin ? 'Editar nota' : 'Agregar nota'}" style="${p.notaAdmin ? 'color:#4f8ef7;border-color:#4f8ef7' : ''}">✏️</button>
-          <button class="icon-btn del" data-action="del" data-id="${p.id}" title="Eliminar">🗑️</button>
+          ${BORRADO_HABILITADO ? `<button class="icon-btn del" data-action="del" data-id="${p.id}" title="Eliminar">🗑️</button>` : ''}
         </div>
         ${p.notaAdmin ? `<div style="margin-top:5px;font-size:11px;color:#7a90b8;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.notaAdmin)}">📝 ${escHtml(p.notaAdmin)}</div>` : ''}
       </td>
@@ -311,6 +329,7 @@ document.getElementById('ordersTable').addEventListener('click', async e => {
     if (p) openModal(p);
   }
   if (btn.dataset.action === 'del') {
+    if (!BORRADO_HABILITADO) return;   // ver BORRADO_HABILITADO al inicio del fichero
     if (!confirm('¿Eliminar este pedido?')) return;
     await deletePedido(id);
     allPedidos = allPedidos.filter(p => p.id !== id);
@@ -348,7 +367,12 @@ document.getElementById('modalOverlay').addEventListener('click', e => {
     document.getElementById('modalOverlay').style.display = 'none';
 });
 
+// El botón está oculto en el HTML (atributo `hidden`); solo se muestra si el
+// borrado está habilitado. Ver BORRADO_HABILITADO al inicio del fichero.
+if (BORRADO_HABILITADO) document.getElementById('clearAllBtn').hidden = false;
+
 document.getElementById('clearAllBtn').addEventListener('click', async () => {
+  if (!BORRADO_HABILITADO) return;
   if (!confirm('¿Borrar TODOS los pedidos? Esta acción no se puede deshacer.')) return;
   await deleteAllPedidos();
   allPedidos = [];
@@ -484,7 +508,7 @@ async function renderUsers() {
       <td>${rolBadge}</td>
       <td class="td-sm">${escHtml(u.creadoEl || '—')}</td>
       <td style="text-align:center">${count}</td>
-      <td><button class="icon-btn del" data-action="del-user" data-id="${u.id}" title="Eliminar usuario">🗑️</button></td>
+      <td>${BORRADO_HABILITADO ? `<button class="icon-btn del" data-action="del-user" data-id="${u.id}" title="Eliminar usuario">🗑️</button>` : '<span class="td-sm" style="color:var(--text-muted)" title="Baja de usuarios: operación manual en base de datos (ver README.md)">—</span>'}</td>
     </tr>`;
   }).join('');
 }
@@ -500,6 +524,7 @@ document.getElementById('usersToggle').addEventListener('click', () => {
 document.getElementById('usersTable').addEventListener('click', async e => {
   const btn = e.target.closest('[data-action="del-user"]');
   if (!btn) return;
+  if (!BORRADO_HABILITADO) return;   // ver BORRADO_HABILITADO al inicio del fichero
   const id    = Number(btn.dataset.id);
   const users = await getDbUsers();
   const user  = users.find(u => u.id === id);

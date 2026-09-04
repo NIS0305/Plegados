@@ -17,9 +17,6 @@ function logout() {
   window.location.href = 'login.html';
 }
 
-const ADMIN_CODE   = 'PLEGADO_ADMIN';
-const ALMACEN_CODE = 'PLEGADO_ALMACEN';
-
 function requireAuth() {
   const u = getCurrentUser();
   if (!u) { window.location.href = 'login.html'; return null; }
@@ -33,13 +30,16 @@ function requireAdmin() {
   return u;
 }
 
-async function registerUser(nombre, email, password, adminCode = '') {
+async function registerUser(nombre, email, password) {
   const { data: existing } = await _db.from('users')
     .select('id').eq('email', email.trim().toLowerCase()).maybeSingle();
   if (existing) throw new Error('Ya existe una cuenta con ese email.');
 
-  const code = (adminCode || '').trim();
-  const role = code === ADMIN_CODE ? 'admin' : code === ALMACEN_CODE ? 'almacen' : 'montador';
+  // El alta desde la interfaz crea SIEMPRE un montador. Los roles 'admin' y
+  // 'almacen' se asignan a mano en la base de datos (ver README.md). Antes se
+  // concedían con un código comparado aquí mismo, y ese código viajaba en claro
+  // en el JavaScript que descarga cualquier visitante.
+  const role = 'montador';
   const user = {
     id:           Date.now(),
     nombre:       nombre.trim(),

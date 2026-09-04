@@ -17,11 +17,9 @@
     </div>
 
     <div class="auth-card">
-      <div class="auth-tabs">
-        <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
-        <button class="auth-tab" data-tab="register">Crear cuenta</button>
-      </div>
-
+      <!-- Sin pestaña de registro: el alta de cuentas de almacén se hace en la
+           base de datos. El autoservicio exigía un código de almacén que viajaba
+           en claro en el JavaScript. Ver README.md. -->
       <!-- LOGIN -->
       <form id="loginForm" class="auth-form active" novalidate>
         <div class="form-group">
@@ -39,46 +37,9 @@
         </div>
         <div class="error-msg form-error" id="loginError"></div>
         <button type="submit" class="btn btn-primary btn-full" id="loginBtn">Entrar</button>
-        <p class="auth-hint">¿No tienes cuenta? <button type="button" class="link-btn" data-switch="register">Regístrate</button></p>
+        <p class="auth-hint">Las cuentas de almacén las da de alta el administrador.</p>
       </form>
 
-      <!-- REGISTER -->
-      <form id="registerForm" class="auth-form" novalidate>
-        <div class="form-group">
-          <label for="regNombre">Nombre</label>
-          <input type="text" id="regNombre" placeholder="Ej: Juan García" required />
-          <span class="error-msg" id="err-regNombre"></span>
-        </div>
-        <div class="form-group">
-          <label for="regEmail">Email</label>
-          <input type="email" id="regEmail" placeholder="tu@email.com" required />
-          <span class="error-msg" id="err-regEmail"></span>
-        </div>
-        <div class="form-group">
-          <label for="regPassword">Contraseña</label>
-          <div class="pass-wrap">
-            <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" required minlength="6" />
-            <button type="button" class="toggle-pass" data-target="regPassword">👁</button>
-          </div>
-          <span class="error-msg" id="err-regPassword"></span>
-        </div>
-        <div class="form-group">
-          <label for="regPassword2">Confirmar contraseña</label>
-          <div class="pass-wrap">
-            <input type="password" id="regPassword2" placeholder="Repite tu contraseña" required />
-            <button type="button" class="toggle-pass" data-target="regPassword2">👁</button>
-          </div>
-          <span class="error-msg" id="err-regPassword2"></span>
-        </div>
-        <div class="form-group">
-          <label for="regAlmacenCode">Código de almacén</label>
-          <input type="text" id="regAlmacenCode" placeholder="Código requerido" required />
-          <span class="error-msg" id="err-regAlmacenCode"></span>
-        </div>
-        <div class="error-msg form-error" id="registerError"></div>
-        <button type="submit" class="btn btn-primary btn-full" id="registerBtn">Crear cuenta</button>
-        <p class="auth-hint">¿Ya tienes cuenta? <button type="button" class="link-btn" data-switch="login">Inicia sesión</button></p>
-      </form>
     </div>
   </div>
 
@@ -91,18 +52,6 @@
     if (_existing) {
       window.location.href = _existing.role === 'admin' ? 'dashboard.html' : 'index.html';
     }
-
-    const tabs  = document.querySelectorAll('.auth-tab');
-    const forms = document.querySelectorAll('.auth-form');
-
-    function switchTab(name) {
-      tabs.forEach(t  => t.classList.toggle('active', t.dataset.tab === name));
-      forms.forEach(f => f.classList.toggle('active', f.id === name + 'Form'));
-    }
-
-    tabs.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
-    document.querySelectorAll('[data-switch]').forEach(b =>
-      b.addEventListener('click', () => switchTab(b.dataset.switch)));
 
     document.querySelectorAll('.toggle-pass').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -140,47 +89,6 @@
       } catch (err) {
         errEl.textContent = err.message;
         btn.disabled = false; btn.textContent = 'Entrar';
-      }
-    });
-
-    // REGISTER
-    document.getElementById('registerForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const nombre      = document.getElementById('regNombre').value.trim();
-      const email       = document.getElementById('regEmail').value.trim();
-      const pass        = document.getElementById('regPassword').value;
-      const pass2       = document.getElementById('regPassword2').value;
-      const almacenCode = document.getElementById('regAlmacenCode').value.trim();
-      const errEl       = document.getElementById('registerError');
-      const btn         = document.getElementById('registerBtn');
-      let ok = true;
-
-      const clear  = id => document.getElementById(id).textContent = '';
-      const setErr = (id, msg) => { document.getElementById(id).textContent = msg; ok = false; };
-
-      ['err-regNombre','err-regEmail','err-regPassword','err-regPassword2','err-regAlmacenCode'].forEach(clear);
-      errEl.textContent = '';
-
-      if (!nombre) setErr('err-regNombre', 'Ingresa tu nombre');
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) setErr('err-regEmail', 'Ingresa un email válido');
-      if (pass.length < 6) setErr('err-regPassword', 'Mínimo 6 caracteres');
-      if (pass !== pass2)  setErr('err-regPassword2', 'Las contraseñas no coinciden');
-      if (!almacenCode)    setErr('err-regAlmacenCode', 'El código de almacén es obligatorio');
-      if (!ok) return;
-
-      if (almacenCode !== ALMACEN_CODE) {
-        setErr('err-regAlmacenCode', 'Código de almacén incorrecto.');
-        return;
-      }
-
-      btn.disabled = true; btn.textContent = 'Creando cuenta...';
-      try {
-        const user = await registerUser(nombre, email, pass, almacenCode);
-        setCurrentUser(user);
-        window.location.href = 'index.html';
-      } catch (err) {
-        errEl.textContent = err.message;
-        btn.disabled = false; btn.textContent = 'Crear cuenta';
       }
     });
 

@@ -118,7 +118,9 @@
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <input type="text" id="tableSearch" class="search-input" style="width:220px;margin:0" placeholder="Buscar..."/>
           <button class="btn btn-secondary btn-sm" id="exportCsv">⬇ CSV</button>
-          <button class="btn btn-danger btn-sm" id="clearAllBtn">🗑 Borrar todos</button>
+          <!-- Oculto: el borrado está deshabilitado. Lo muestra dashboard.js si
+               BORRADO_HABILITADO es true. Ver MIGRACION-SEGURIDAD.md, Parte 1.5. -->
+          <button class="btn btn-danger btn-sm" id="clearAllBtn" hidden>🗑 Borrar todos</button>
         </div>
       </div>
       <div class="table-wrap">

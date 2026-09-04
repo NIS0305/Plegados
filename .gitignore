@@ -1,0 +1,25 @@
+# Variables de entorno y configuración local
+.env
+.env.*
+!.env.example
+*.local
+config.local.js
+secrets.json
+
+# Configuración local de herramientas
+.claude/settings.local.json
+.vscode/
+.idea/
+
+# Dependencias (este proyecto no las usa hoy, pero evita accidentes)
+node_modules/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs y temporales
+*.log
+*.tmp
+*.bak
