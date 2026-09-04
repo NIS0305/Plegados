@@ -95,6 +95,18 @@ function openModal(pedido) {
     </div>`;
   }
 
+  // Documentos del pedido (PDF del plano y etiqueta), p.ej. los que genera n8n.
+  const pdfUrl = pedido.pdfPath      ? getPublicUrl(pedido.pdfPath)      : null;
+  const etqUrl = pedido.etiquetaPath ? getPublicUrl(pedido.etiquetaPath) : null;
+  const docRow = (url, label, icon) => url ? `<div class="detail-row">
+      <div class="detail-label">${label}</div>
+      <div class="detail-value">
+        <a href="${url}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="text-decoration:none;display:inline-flex;gap:6px;align-items:center">${icon} Abrir / Imprimir</a>
+      </div>
+    </div>` : '';
+  const pdfHtml      = docRow(pdfUrl, 'Plano (PDF)', '🖨️');
+  const etiquetaHtml = docRow(etqUrl, 'Etiqueta',    '🏷️');
+
   body.innerHTML = `
     <div class="detail-row">
       <div class="detail-label">Montador</div>
@@ -133,6 +145,8 @@ function openModal(pedido) {
       <div class="detail-value" style="padding:8px 12px;background:rgba(79,142,247,.08);border-left:3px solid #4f8ef7;border-radius:0 6px 6px 0">${escHtml(pedido.notaAdmin)}</div>
     </div>` : ''}
     ${imgHtml}
+    ${pdfHtml}
+    ${etiquetaHtml}
   `;
   document.getElementById('modalOverlay').style.display = 'flex';
 }

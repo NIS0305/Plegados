@@ -20,6 +20,9 @@ function rowToPedido(r) {
     filePath:    r.file_path,
     estado:      r.estado,
     notaAdmin:   r.nota_admin,
+    pdfPath:     r.pdf_path,
+    etiquetaPath:r.etiqueta_path,
+    origen:      r.origen,
   };
 }
 

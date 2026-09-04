@@ -231,7 +231,7 @@ function renderTable(list) {
 
     return `<tr>
       <td class="td-id">#${p.id}</td>
-      <td><strong>${escHtml(p.montador)}</strong></td>
+      <td><strong>${escHtml(p.montador)}</strong>${p.origen === 'email' ? ' <span class="badge badge-gray" style="font-size:10px" title="Pedido recibido por email">\u2709 Email</span>' : ''}</td>
       <td class="td-sm">${escHtml(p.fecha)}</td>
       <td class="td-sm">${escHtml(p.referencia) || '—'}</td>
       <td class="td-sm">${escHtml(p.ral) || '—'}</td>
@@ -414,7 +414,7 @@ function renderAlmacenSection() {
 
     return `<tr>
       <td class="td-id">#${p.id}</td>
-      <td><strong>${escHtml(p.montador)}</strong></td>
+      <td><strong>${escHtml(p.montador)}</strong>${p.origen === 'email' ? ' <span class="badge badge-gray" style="font-size:10px" title="Pedido recibido por email">\u2709 Email</span>' : ''}</td>
       <td class="td-sm">${escHtml(p.fecha)}</td>
       <td class="td-sm">${escHtml(p.referencia) || '—'}</td>
       <td class="td-sm">${escHtml(p.ral) || '—'}</td>
