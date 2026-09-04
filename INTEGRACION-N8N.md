@@ -1,37 +1,45 @@
 # Integración n8n → dashboard (pedidos por email)
 
-Estado: el lado app está hecho y desplegado. La cuenta de taller
+El lado app está hecho y desplegado. La cuenta de taller
 (`tmipedidos@tmisystem.com`, uuid `1fa2e000-3c18-4932-8561-c746c6623070`, rol
 `almacen`) recibe los pedidos de email y aparecen en "Pedidos de almacén" del
 dashboard, con botones de Plano (PDF) y Etiqueta.
 
-Falta un solo paso: que el workflow **"Pedidos Email a PDF"** de n8n, tras
-generar el PDF, lo suba a Supabase y cree la fila del pedido.
+Falta añadir al workflow **"Pedidos Email a PDF"** dos nodos que suban el PDF a
+Supabase y creen la fila del pedido.
 
-## Credencial (YA CREADA)
-- n8n → Credentials → **Supabase API** llamada "Supabase account".
+## Credencial (YA CREADA y probada)
+n8n → Credentials → **Supabase API** "Supabase account":
 - Host: `https://bgigpjufjtclahbknuyx.supabase.co`
-- Service Role Secret: la clave **service_role legacy** (JWT `eyJ...`), no la
-  `sb_secret_` (esa hace fallar el test de conexión de n8n).
-- Estado: "Connection tested successfully".
+- Service Role Secret: la **service_role legacy** (JWT `eyJ...`), NO la `sb_secret_`.
 
-## Dónde enganchar
-Después del nodo que genera el PDF (**"HTML a PDF (Gotenberg)"** / antes o
-después de "Guardar PDF en Drive"), añadir DOS nodos HTTP Request en cadena:
+## Datos confirmados del workflow
+El nodo **"Extraer pedido + preparar HTML"** devuelve, entre otros:
+- `orderNumber` → nº de pedido (8 díg.) o `null`
+- `fileName`    → `"<orderNumber>.pdf"` (o `SIN_PEDIDO_<ts>.pdf`)
+- `fecha` (dd/mm/aaaa), `hora` (HH:mm), `fromEmail`, `tipoPedido` (Chapa/Cristal/Mixto/Revisar)
 
-Gotenberg → [Subir PDF a Supabase] → [Insertar pedido en Supabase]
+El PDF binario sale del nodo **"HTML a PDF (Gotenberg)"** en la propiedad **`data`**
+(confirmar de un vistazo al montar).
+
+## Dónde enganchar (SIN romper el guardado en Drive)
+Colgar el nodo nuevo **en paralelo** desde la salida de **"HTML a PDF (Gotenberg)"**:
+
+```
+HTML a PDF (Gotenberg) ─┬─> Guardar PDF en Drive        (lo que ya existe)
+                        └─> Subir PDF a Supabase ─> Insertar pedido en Supabase   (NUEVO)
+```
 
 ## Nodo 1 — "Subir PDF a Supabase" (HTTP Request)
 - **Method**: POST
-- **URL** (expresión):
-  `https://bgigpjufjtclahbknuyx.supabase.co/storage/v1/object/dibujos/email/{{ $json.NUMERO }}.pdf`
+- **URL**:
+  `https://bgigpjufjtclahbknuyx.supabase.co/storage/v1/object/dibujos/email/{{ $('Extraer pedido + preparar HTML').item.json.fileName }}`
 - **Authentication**: Predefined Credential Type → **Supabase API** → "Supabase account"
 - **Send Headers**: ON
   - `Content-Type` = `application/pdf`
   - `x-upsert` = `true`
 - **Send Body**: ON → **Body Content Type: n8n Binary File**
-  - **Input Data Field Name**: el nombre de la propiedad binaria del PDF que sale
-    de Gotenberg (normalmente `data`).
+  - **Input Data Field Name**: `data`
 
 ## Nodo 2 — "Insertar pedido en Supabase" (HTTP Request)
 - **Method**: POST
@@ -45,26 +53,23 @@ Gotenberg → [Subir PDF a Supabase] → [Insertar pedido en Supabase]
 {
   "id": {{ Date.now() }},
   "user_uid": "1fa2e000-3c18-4932-8561-c746c6623070",
-  "fecha": "{{ $now.format('dd/MM/yyyy, HH:mm') }}",
-  "montador": "Pedido Email",
+  "fecha": "{{ $('Extraer pedido + preparar HTML').item.json.fecha }}, {{ $('Extraer pedido + preparar HTML').item.json.hora }}",
+  "montador": "{{ $('Extraer pedido + preparar HTML').item.json.fromEmail }}",
   "cantidad": 1,
   "estado": "Pendiente",
-  "referencia": "{{ $json.NUMERO }}",
+  "referencia": "{{ $('Extraer pedido + preparar HTML').item.json.orderNumber }}",
+  "notas": "{{ $('Extraer pedido + preparar HTML').item.json.tipoPedido }}",
   "origen": "email",
-  "pdf_path": "email/{{ $json.NUMERO }}.pdf"
+  "pdf_path": "email/{{ $('Extraer pedido + preparar HTML').item.json.fileName }}"
 }
 ```
 
-## Los DOS únicos huecos a confirmar (mirando tu workflow)
-1. **`{{ $json.NUMERO }}`** → cómo se llama el campo del nº de pedido que saca el
-   nodo "Extraer pedido + preparar HTML" (clica su salida para verlo).
-2. **Input Data Field Name** del nodo 1 → la propiedad binaria del PDF de Gotenberg.
-
 ## Probar
-- Ejecutar el workflow con un email de prueba (o Execute workflow).
-- Debe aparecer en el dashboard, en "Pedidos de almacén", con su Plano (PDF)
-  abrible desde el botón.
+Con un email de prueba (o reprocesando uno), debe aparecer en el dashboard →
+"Pedidos de almacén", con su Plano (PDF) abrible desde el botón.
+El `referencia` = nº de pedido; `montador` (columna Solicitante) = quién lo envió;
+`notas` = tipo (Chapa/Cristal/Mixto).
 
 ## Nota de alcance
-El bucket `dibujos` es público de lectura, así que el PDF se abre por URL
-pública. Si se quiere privado + URLs firmadas, es un endurecimiento posterior.
+El bucket `dibujos` es público de lectura (el PDF se abre por URL pública).
+Privado + URLs firmadas queda como endurecimiento posterior.
