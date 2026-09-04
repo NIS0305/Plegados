@@ -1,6 +1,10 @@
 const SUPABASE_URL  = 'https://bgigpjufjtclahbknuyx.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWdwanVmanRjbGFoYmtudXl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNDk3ODksImV4cCI6MjA5MzgyNTc4OX0.7F1vNTMkuUl_McLn1WJ-4T5Rfn25lMpibOTJaYI4ipM';
 
+// Webhook de n8n que genera la etiqueta del pedido (misma que Telegram).
+// Rellena con la URL real del nodo Webhook de n8n. Ver INTEGRACION-N8N.md.
+const N8N_ETIQUETA_WEBHOOK = 'https://TU-N8N.example/webhook/generar-etiqueta';
+
 const _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ── Row mappers ───────────────────────────────────────────────────────────────
@@ -33,6 +37,12 @@ async function getPedidos(filter = {}) {
   const { data, error } = await q;
   if (error) { console.error('getPedidos:', error); return []; }
   return (data || []).map(rowToPedido);
+}
+
+async function getPedidoById(id) {
+  const { data, error } = await _db.from('pedidos').select('*').eq('id', id).maybeSingle();
+  if (error) { console.error('getPedidoById:', error); return null; }
+  return data ? rowToPedido(data) : null;
 }
 
 async function savePedido(pedido) {

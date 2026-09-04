@@ -105,7 +105,14 @@ function openModal(pedido) {
       </div>
     </div>` : '';
   const pdfHtml      = docRow(pdfUrl, 'Plano (PDF)', '🖨️');
-  const etiquetaHtml = docRow(etqUrl, 'Etiqueta',    '🏷️');
+  const etiquetaHtml = etqUrl
+    ? docRow(etqUrl, 'Etiqueta', '🏷️')
+    : `<div class="detail-row">
+      <div class="detail-label">Etiqueta</div>
+      <div class="detail-value">
+        <button type="button" id="genEtiquetaBtn" class="btn btn-primary btn-sm" data-id="${pedido.id}" data-ref="${escHtml(pedido.referencia || '')}" style="display:inline-flex;gap:6px;align-items:center;cursor:pointer">🏷️ Generar etiqueta</button>
+      </div>
+    </div>`;
 
   body.innerHTML = `
     <div class="detail-row">
@@ -370,3 +377,44 @@ if (form) (async () => {
 
   renderMyOrders();
 })();
+
+
+// ===== Generar etiqueta desde la app (llama al workflow de n8n) =====
+// Disponible en cualquier pagina que abra el modal (formulario y dashboard).
+// El webhook genera la MISMA etiqueta que Telegram, la guarda en Drive y en
+// Supabase Storage, y rellena pedidos.etiqueta_path. Ver INTEGRACION-N8N.md.
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('#genEtiquetaBtn');
+  if (!btn || btn.disabled) return;
+  const id  = Number(btn.dataset.id);
+  const ref = btn.dataset.ref || '';
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Generando…';
+  try {
+    if (!N8N_ETIQUETA_WEBHOOK || /TU-N8N/.test(N8N_ETIQUETA_WEBHOOK)) {
+      throw new Error('webhook-no-configurado');
+    }
+    const res = await fetch(N8N_ETIQUETA_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pedido_id: id, referencia: ref }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    let etiquetaPath = null;
+    try { const j = await res.json(); etiquetaPath = j.etiqueta_path || j.etiquetaPath || null; } catch (_) {}
+    const p = await getPedidoById(id);
+    if (p) {
+      if (etiquetaPath && !p.etiquetaPath) p.etiquetaPath = etiquetaPath;
+      openModal(p);
+    }
+    showToast('✅ Etiqueta generada.');
+  } catch (err) {
+    console.error('generar etiqueta:', err);
+    btn.disabled = false;
+    btn.innerHTML = original;
+    showToast(err.message === 'webhook-no-configurado'
+      ? 'Falta configurar el webhook de n8n (N8N_ETIQUETA_WEBHOOK).'
+      : 'No se pudo generar la etiqueta. Intentalo de nuevo.');
+  }
+});
