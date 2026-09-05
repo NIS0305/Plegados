@@ -34,6 +34,12 @@ const COLORS = {
 
 const ESTADOS = ['Pendiente', 'Completado', 'En taller', 'Entregado a montador', 'Entregado a reparto'];
 
+// Estado "finalizado": Completado o posterior. Es el mismo conjunto que usa el
+// resto de la app (stepper de app.js) para dar un pedido por terminado.
+function esFinalizado(estado) {
+  return ['Completado', 'En taller', 'Entregado a montador', 'Entregado a reparto'].includes(estado);
+}
+
 // ─── State ───────────────────────────────────────────────────────────────────
 const state = {
   montador: '', estado: '',
@@ -290,6 +296,7 @@ function renderAll() {
   try { renderChips(); }              catch(e) { console.error('renderChips:', e); }
   try { updateSortHeaders(); }        catch(e) { console.error('updateSortHeaders:', e); }
   try { renderAlmacenSection(); }     catch(e) { console.error('renderAlmacenSection:', e); }
+  try { renderAlmacenHistorial(); }   catch(e) { console.error('renderAlmacenHistorial:', e); }
 }
 
 // ─── Events ──────────────────────────────────────────────────────────────────
@@ -387,57 +394,93 @@ document.getElementById('exportCsv').addEventListener('click', () => {
   a.click();
 });
 
+// CSV de almacén: TODOS los pedidos de almacén (activos + historial). Mismo
+// escapado de comillas y mismo BOM (\ufeff) que el de montadores, para que
+// Excel respete los acentos.
+document.getElementById('exportCsvAlmacen').addEventListener('click', (e) => {
+  e.stopPropagation(); // el botón vive en la cabecera plegable: no abrir/cerrar la sección
+  const list    = getAlmacenPedidos();
+  const headers = ['ID','Solicitante','Fecha','Referencia','RAL','Cantidad','Estado','Origen','Notas','Nota Taller'];
+  const rows    = list.map(p => [
+    p.id, p.montador, p.fecha, p.referencia || '', p.ral || '', p.cantidad,
+    p.estado, p.origen || '', p.notas || '', p.notaAdmin || '',
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a   = document.createElement('a');
+  a.href    = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `almacen_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+});
+
 // ─── Almacén section ──────────────────────────────────────────────────────────
 function getAlmacenPedidos() {
   const almacenIds = new Set(allUsers.filter(u => u.role === 'almacen').map(u => u.id));
   return allPedidos.filter(p => almacenIds.has(p.userId));
 }
 
-function renderAlmacenSection() {
-  const pedidos = getAlmacenPedidos();
-  const countEl = document.getElementById('almacenCount');
+// Fila compartida por la tabla activa y por el historial: MISMO maquetado y
+// MISMAS acciones (select de estado, ver, nota...), para que un pedido marcado
+// por error como finalizado se pueda reabrir desde el historial cambiando el estado.
+function filaAlmacen(p) {
+  let dibujoHtml = '—';
+  const imgUrl  = p.filePath ? getPublicUrl(p.filePath) : null;
+  const isImage = p.fileType?.startsWith('image/') || /\.(jpg|jpeg|png|svg|webp)$/i.test(p.filePath || '');
+  if (imgUrl && isImage)
+    dibujoHtml = `<img src="${imgUrl}" class="table-thumb" data-action="ver" data-id="${p.id}" title="Ver dibujo" />`;
+  else if (imgUrl)
+    dibujoHtml = `<span style="cursor:pointer;font-size:20px" data-action="ver" data-id="${p.id}" title="${escHtml(p.fileName)}">📄</span>`;
+
+  return `<tr>
+    <td class="td-id">#${p.id}</td>
+    <td><strong>${escHtml(p.montador)}</strong>${p.origen === 'email' ? ' <span class="badge badge-gray" style="font-size:10px" title="Pedido recibido por email">\u2709 Email</span>' : ''}</td>
+    <td class="td-sm">${escHtml(p.fecha)}</td>
+    <td class="td-sm">${escHtml(p.referencia) || '—'}</td>
+    <td class="td-sm">${escHtml(p.ral) || '—'}</td>
+    <td style="text-align:center">${escHtml(p.cantidad)}</td>
+    <td>
+      <select class="estado-select-table" data-id="${p.id}">
+        ${ESTADOS.map(s => `<option value="${s}"${s === p.estado ? ' selected' : ''}>${s}</option>`).join('')}
+      </select>
+    </td>
+    <td style="text-align:center">${dibujoHtml}</td>
+    <td>
+      <div style="display:flex;gap:4px">
+        <button class="icon-btn" data-action="ver" data-id="${p.id}" title="Detalle">🔍</button>
+        <button class="icon-btn${p.notaAdmin ? ' nota-activa' : ''}" data-action="nota" data-id="${p.id}" title="${p.notaAdmin ? 'Editar nota' : 'Agregar nota'}" style="${p.notaAdmin ? 'color:#4f8ef7;border-color:#4f8ef7' : ''}">✏️</button>
+        <button class="icon-btn del" data-action="del" data-id="${p.id}" title="Eliminar">🗑️</button>
+      </div>
+      ${p.notaAdmin ? `<div style="margin-top:5px;font-size:11px;color:#7a90b8;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.notaAdmin)}">📝 ${escHtml(p.notaAdmin)}</div>` : ''}
+    </td>
+  </tr>`;
+}
+
+function renderAlmacenTabla(bodyId, countId, pedidos, textoVacio) {
+  const countEl = document.getElementById(countId);
   if (countEl) countEl.textContent = `${pedidos.length} pedido${pedidos.length !== 1 ? 's' : ''}`;
 
-  const tbody = document.getElementById('almacenBody');
+  const tbody = document.getElementById(bodyId);
   if (!tbody) return;
 
   if (!pedidos.length) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">No hay pedidos de almacén</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">${textoVacio}</td></tr>`;
     return;
   }
+  tbody.innerHTML = pedidos.map(filaAlmacen).join('');
+}
 
-  tbody.innerHTML = pedidos.map(p => {
-    let dibujoHtml = '—';
-    const imgUrl  = p.filePath ? getPublicUrl(p.filePath) : null;
-    const isImage = p.fileType?.startsWith('image/') || /\.(jpg|jpeg|png|svg|webp)$/i.test(p.filePath || '');
-    if (imgUrl && isImage)
-      dibujoHtml = `<img src="${imgUrl}" class="table-thumb" data-action="ver" data-id="${p.id}" title="Ver dibujo" />`;
-    else if (imgUrl)
-      dibujoHtml = `<span style="cursor:pointer;font-size:20px" data-action="ver" data-id="${p.id}" title="${escHtml(p.fileName)}">📄</span>`;
+// Lista ACTIVA de almacén: solo los NO finalizados. Al pasar a 'Completado' (o
+// posterior) el pedido sale de aquí y entra en el historial.
+function renderAlmacenSection() {
+  renderAlmacenTabla('almacenBody', 'almacenCount',
+    getAlmacenPedidos().filter(p => !esFinalizado(p.estado)),
+    'No hay pedidos de almacén activos');
+}
 
-    return `<tr>
-      <td class="td-id">#${p.id}</td>
-      <td><strong>${escHtml(p.montador)}</strong>${p.origen === 'email' ? ' <span class="badge badge-gray" style="font-size:10px" title="Pedido recibido por email">\u2709 Email</span>' : ''}</td>
-      <td class="td-sm">${escHtml(p.fecha)}</td>
-      <td class="td-sm">${escHtml(p.referencia) || '—'}</td>
-      <td class="td-sm">${escHtml(p.ral) || '—'}</td>
-      <td style="text-align:center">${escHtml(p.cantidad)}</td>
-      <td>
-        <select class="estado-select-table" data-id="${p.id}">
-          ${ESTADOS.map(s => `<option value="${s}"${s === p.estado ? ' selected' : ''}>${s}</option>`).join('')}
-        </select>
-      </td>
-      <td style="text-align:center">${dibujoHtml}</td>
-      <td>
-        <div style="display:flex;gap:4px">
-          <button class="icon-btn" data-action="ver" data-id="${p.id}" title="Detalle">🔍</button>
-          <button class="icon-btn${p.notaAdmin ? ' nota-activa' : ''}" data-action="nota" data-id="${p.id}" title="${p.notaAdmin ? 'Editar nota' : 'Agregar nota'}" style="${p.notaAdmin ? 'color:#4f8ef7;border-color:#4f8ef7' : ''}">✏️</button>
-          <button class="icon-btn del" data-action="del" data-id="${p.id}" title="Eliminar">🗑️</button>
-        </div>
-        ${p.notaAdmin ? `<div style="margin-top:5px;font-size:11px;color:#7a90b8;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.notaAdmin)}">📝 ${escHtml(p.notaAdmin)}</div>` : ''}
-      </td>
-    </tr>`;
-  }).join('');
+// HISTORIAL de almacén: los finalizados (Completado o posterior).
+function renderAlmacenHistorial() {
+  renderAlmacenTabla('almacenHistBody', 'almacenHistCount',
+    getAlmacenPedidos().filter(p => esFinalizado(p.estado)),
+    'Sin pedidos de almacén finalizados');
 }
 
 document.getElementById('almacenToggle').addEventListener('click', () => {
@@ -448,7 +491,16 @@ document.getElementById('almacenToggle').addEventListener('click', () => {
   chevron.style.transform = open ? 'rotate(90deg)' : '';
 });
 
-document.getElementById('almacenTable').addEventListener('click', async e => {
+document.getElementById('almacenHistToggle').addEventListener('click', () => {
+  const panel   = document.getElementById('almacenHistCollapsible');
+  const chevron = document.getElementById('almacenHistChevron');
+  const open    = panel.style.display === 'none';
+  panel.style.display     = open ? '' : 'none';
+  chevron.style.transform = open ? 'rotate(90deg)' : '';
+});
+
+// Handlers compartidos por la tabla activa y el historial de almacén.
+async function onAlmacenClick(e) {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
   const id = Number(btn.dataset.id);
@@ -465,9 +517,9 @@ document.getElementById('almacenTable').addEventListener('click', async e => {
     showToast('Pedido eliminado');
     renderAll();
   }
-});
+}
 
-document.getElementById('almacenTable').addEventListener('change', async e => {
+async function onAlmacenChange(e) {
   const sel = e.target.closest('.estado-select-table');
   if (!sel) return;
   const id = Number(sel.dataset.id);
@@ -476,7 +528,14 @@ document.getElementById('almacenTable').addEventListener('change', async e => {
   p.estado = sel.value;
   await updatePedidoField(id, { estado: p.estado });
   showToast(`Estado: ${p.estado}`);
-  renderAll();
+  renderAll();   // re-renderiza las DOS tablas de almacén (activa e historial)
+}
+
+['almacenTable', 'almacenHistTable'].forEach(id => {
+  const t = document.getElementById(id);
+  if (!t) return;
+  t.addEventListener('click',  onAlmacenClick);
+  t.addEventListener('change', onAlmacenChange);
 });
 
 // ─── Users ────────────────────────────────────────────────────────────────────
