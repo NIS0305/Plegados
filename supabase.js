@@ -3,7 +3,7 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 
 // Webhook de n8n que genera la etiqueta del pedido (misma que Telegram).
 // Rellena con la URL real del nodo Webhook de n8n. Ver INTEGRACION-N8N.md.
-const N8N_ETIQUETA_WEBHOOK = 'https://TU-N8N.example/webhook/generar-etiqueta';
+const N8N_ETIQUETA_WEBHOOK = 'https://n8n.tmisystem.com/webhook/generar-etiqueta';
 
 const _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
