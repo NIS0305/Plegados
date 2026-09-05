@@ -20,6 +20,7 @@
       <div class="nav-links">
         <a href="index.html" class="nav-link">Nuevo pedido</a>
         <a href="dashboard.html" class="nav-link active">Dashboard</a>
+        <a href="#historial" class="nav-link">Historial</a>
       </div>
     </div>
     <!-- dashboard.js rellena aquí avatar, nombre, rol y el botón Salir -->
@@ -208,6 +209,79 @@
         </div>
       </div>
     </div>
+
+    <!-- HISTORIAL: registro completo (montadores + almacén), filtrable y exportable. Sin precios. -->
+    <section class="historial" id="historial">
+      <div class="col-head">
+        <div class="bar"></div>
+        <h2 class="col-title cond">Historial</h2>
+        <span class="count" id="histCount"></span>
+        <div class="section-actions">
+          <button class="btn btn-primary btn-sm" id="exportCsvHistorial" title="Descarga exactamente lo que ves con los filtros aplicados">⬇ Descargar CSV</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="hist-filters">
+          <div class="presets">
+            <span class="bi-filter-label">Periodo</span>
+            <button class="btn btn-secondary btn-sm" id="histPresetHoy">Hoy</button>
+            <button class="btn btn-secondary btn-sm" id="histPreset7">Últimos 7 días</button>
+            <button class="btn btn-secondary btn-sm" id="histPresetMes">Este mes</button>
+            <button class="btn btn-secondary btn-sm" id="histPresetMesPasado">Mes pasado</button>
+            <button class="btn btn-secondary btn-sm" id="histPresetTodo">Todo</button>
+          </div>
+          <div class="bi-filters-row">
+            <div class="bi-filter-item">
+              <label class="bi-filter-label" for="histDesde">Desde</label>
+              <input type="date" id="histDesde" class="bi-date" />
+            </div>
+            <div class="bi-filter-item">
+              <label class="bi-filter-label" for="histHasta">Hasta</label>
+              <input type="date" id="histHasta" class="bi-date" />
+            </div>
+            <div class="bi-filter-item">
+              <label class="bi-filter-label" for="histMontador">Montador</label>
+              <select id="histMontador" class="bi-select"><option value="">Todos</option></select>
+            </div>
+            <div class="bi-filter-item grow">
+              <label class="bi-filter-label" for="histCliente">Cliente</label>
+              <input type="text" id="histCliente" class="bi-date" placeholder="Solicitante o referencia…" />
+            </div>
+            <div class="bi-filter-item">
+              <label class="bi-filter-label" for="histEstado">Estado</label>
+              <select id="histEstado" class="bi-select">
+                <option value="">Todos</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="En proceso">En proceso</option>
+                <option value="Completado">Completado</option>
+                <option value="En taller">En taller</option>
+                <option value="Entregado a montador">Entregado a montador</option>
+                <option value="Entregado a reparto">Entregado a reparto</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="bi-table" id="histTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Fecha</th>
+                <th>Referencia</th>
+                <th>Cliente / Solicitante</th>
+                <th>Montador</th>
+                <th>Cant.</th>
+                <th>Estado</th>
+                <th>Origen</th>
+              </tr>
+            </thead>
+            <tbody id="histBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
   </main>
 

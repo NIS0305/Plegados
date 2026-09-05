@@ -492,3 +492,12 @@ input.invalid, select.invalid, textarea.invalid { border-color: var(--danger); }
   .step { width: 56px; }
   .step-label { font-size: 9px; }
 }
+
+/* ===== Historial (registro completo, filtrable, CSV) ===== */
+.historial { margin-top: 36px; scroll-margin-top: 84px; }
+.hist-filters { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+.hist-filters .bi-filters-row { align-items: flex-end; }
+.hist-filters .bi-filter-item.grow { flex: 1; min-width: 220px; }
+.presets { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.presets .bi-filter-label { margin: 0 6px 0 0; }
+.presets .btn { height: 36px; }

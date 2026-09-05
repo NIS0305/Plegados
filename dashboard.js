@@ -297,6 +297,7 @@ function renderAll() {
   try { updateSortHeaders(); }        catch(e) { console.error('updateSortHeaders:', e); }
   try { renderAlmacenSection(); }     catch(e) { console.error('renderAlmacenSection:', e); }
   try { renderAlmacenHistorial(); }   catch(e) { console.error('renderAlmacenHistorial:', e); }
+  try { renderHistorial(); }          catch(e) { console.error('renderHistorial:', e); }
 }
 
 // ─── Events ──────────────────────────────────────────────────────────────────
@@ -654,3 +655,141 @@ document.getElementById('ordersTable').addEventListener('click', e => {
     renderAll();
   });
 })();
+
+// ─── HISTORIAL (registro completo, filtrable y exportable) ───────────────────
+// Registro de TODOS los pedidos (montadores + almacén) para sacar listados por
+// periodo y facturar aparte. SIN precios. Filtros combinados (AND): rango de
+// fechas (con atajos), montador, cliente/referencia y estado. Reutiliza
+// parseFecha(), la semántica desde/hasta de getFiltered() y la técnica de CSV
+// de #exportCsv / #exportCsvAlmacen. Se re-renderiza desde renderAll(), así que
+// se mantiene al día con los filtros y con Realtime (subscribePedidos).
+const histState = { desde: '', hasta: '', montador: '', cliente: '', estado: '' };
+
+function histAlmacenIds() {
+  return new Set(allUsers.filter(u => u.role === 'almacen').map(u => u.id));
+}
+
+function getHistorialFiltrado() {
+  let list = allPedidos; // montadores + almacén, todo
+  if (histState.montador) list = list.filter(p => p.montador === histState.montador);
+  if (histState.estado)   list = list.filter(p => p.estado   === histState.estado);
+  if (histState.desde)    list = list.filter(p => parseFecha(p.fecha) >= new Date(histState.desde));
+  if (histState.hasta)    list = list.filter(p => parseFecha(p.fecha) <= new Date(histState.hasta + 'T23:59:59'));
+  if (histState.cliente) {
+    const q = histState.cliente.toLowerCase();
+    // "Cliente" = solicitante/montador + referencia (el modelo no tiene campo cliente propio).
+    list = list.filter(p =>
+      (p.montador   || '').toLowerCase().includes(q) ||
+      (p.referencia || '').toLowerCase().includes(q)
+    );
+  }
+  // Más reciente primero.
+  return list.slice().sort((a, b) => parseFecha(b.fecha) - parseFecha(a.fecha));
+}
+
+// Filas normalizadas para la tabla y el CSV (misma fuente, mismas columnas).
+function histFila(p, almacenIds) {
+  const esAlmacen = almacenIds.has(p.userId);
+  const origen = p.origen === 'email' ? 'Email' : (esAlmacen ? 'Almacén' : 'Montador');
+  return {
+    id:         p.id,
+    fecha:      p.fecha || '',
+    referencia: p.referencia || '',
+    cliente:    p.montador || '',                   // solicitante
+    montador:   esAlmacen ? '' : (p.montador || ''),
+    cantidad:   p.cantidad ?? '',
+    estado:     p.estado || '',
+    origen,
+  };
+}
+
+// Desplegable de montadores: misma técnica que populateDropdowns(), sin tocarla.
+function populateHistMontadores() {
+  const sel = document.getElementById('histMontador');
+  if (!sel) return;
+  const montadores = [...new Set(allPedidos.map(p => p.montador).filter(Boolean))].sort();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>' + montadores.map(m => `<option value="${escHtml(m)}">${escHtml(m)}</option>`).join('');
+  sel.value = cur;
+}
+
+function renderHistorial() {
+  const tbody = document.getElementById('histBody');
+  if (!tbody) return;
+  populateHistMontadores();
+  const almacenIds = histAlmacenIds();
+  const list = getHistorialFiltrado();
+  const countEl = document.getElementById('histCount');
+  if (countEl) countEl.textContent = `${list.length} resultado${list.length !== 1 ? 's' : ''}`;
+
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">No hay pedidos con esos filtros</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(p => {
+    const r = histFila(p, almacenIds);
+    return `<tr>
+      <td class="td-id">#${r.id}</td>
+      <td class="td-sm">${escHtml(r.fecha)}</td>
+      <td>${escHtml(r.referencia) || '—'}</td>
+      <td><strong>${escHtml(r.cliente) || '—'}</strong></td>
+      <td class="td-sm">${escHtml(r.montador) || '—'}</td>
+      <td style="text-align:center">${escHtml(r.cantidad)}</td>
+      <td><span class="badge ${badgeClass(r.estado)}">${escHtml(r.estado)}</span></td>
+      <td class="td-sm">${escHtml(r.origen)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Fecha local en formato YYYY-MM-DD (lo que esperan los <input type="date">).
+function histYmd(d) {
+  const z = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+}
+function histSetRango(desde, hasta) {
+  histState.desde = desde; histState.hasta = hasta;
+  document.getElementById('histDesde').value = desde;
+  document.getElementById('histHasta').value = hasta;
+  renderHistorial();
+}
+const HIST_PRESETS = {
+  histPresetHoy:       () => { const d = new Date(); histSetRango(histYmd(d), histYmd(d)); },
+  histPreset7:         () => { const h = new Date(); const d = new Date(); d.setDate(h.getDate() - 6); histSetRango(histYmd(d), histYmd(h)); },
+  histPresetMes:       () => { const h = new Date(); histSetRango(histYmd(new Date(h.getFullYear(), h.getMonth(), 1)), histYmd(h)); },
+  histPresetMesPasado: () => { const h = new Date(); histSetRango(histYmd(new Date(h.getFullYear(), h.getMonth() - 1, 1)), histYmd(new Date(h.getFullYear(), h.getMonth(), 0))); },
+  histPresetTodo:      () => {
+    histState.montador = ''; histState.cliente = ''; histState.estado = '';
+    document.getElementById('histMontador').value = '';
+    document.getElementById('histCliente').value  = '';
+    document.getElementById('histEstado').value   = '';
+    histSetRango('', '');
+  },
+};
+Object.entries(HIST_PRESETS).forEach(([id, fn]) => {
+  const b = document.getElementById(id);
+  if (b) b.addEventListener('click', fn);
+});
+document.getElementById('histDesde').addEventListener('change',    e => { histState.desde    = e.target.value; renderHistorial(); });
+document.getElementById('histHasta').addEventListener('change',    e => { histState.hasta    = e.target.value; renderHistorial(); });
+document.getElementById('histMontador').addEventListener('change', e => { histState.montador = e.target.value; renderHistorial(); });
+document.getElementById('histCliente').addEventListener('input',   e => { histState.cliente  = e.target.value.trim(); renderHistorial(); });
+document.getElementById('histEstado').addEventListener('change',   e => { histState.estado   = e.target.value; renderHistorial(); });
+
+// CSV del historial: EXACTAMENTE el conjunto filtrado, misma técnica (BOM +
+// comillas dobladas + coma). Nombre con el rango si lo hay.
+document.getElementById('exportCsvHistorial').addEventListener('click', () => {
+  const almacenIds = histAlmacenIds();
+  const list    = getHistorialFiltrado().map(p => histFila(p, almacenIds));
+  const headers = ['ID','Fecha','Referencia','Cliente/Solicitante','Montador','Cantidad','Estado','Origen'];
+  const rows    = list.map(r => [
+    r.id, r.fecha, r.referencia, r.cliente, r.montador, r.cantidad, r.estado, r.origen,
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a   = document.createElement('a');
+  a.href    = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+  const rango = (histState.desde || histState.hasta)
+    ? `${histState.desde || 'inicio'}_${histState.hasta || 'hoy'}`
+    : new Date().toISOString().slice(0, 10);
+  a.download = `historial_${rango}.csv`;
+  a.click();
+});
