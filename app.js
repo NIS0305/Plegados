@@ -141,6 +141,7 @@ const form = document.getElementById('pedidoForm');
 if (form) (async () => {
   const currentUser = await requireAuth();
   if (!currentUser) return;   // requireAuth ya redirige a login.html
+  document.body.style.visibility = 'visible';   // autenticado: mostrar (evita el flash)
 
   document.getElementById('navUsername').textContent = currentUser.nombre;
   document.getElementById('navAvatar').textContent   = currentUser.nombre.charAt(0).toUpperCase();

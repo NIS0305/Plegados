@@ -636,6 +636,7 @@ document.getElementById('ordersTable').addEventListener('click', e => {
 (async () => {
   const u = await requireStaff();
   if (!u) return;   // requireStaff ya redirige si no hay sesión o no es admin/almacén
+  document.body.style.visibility = 'visible';   // autenticado: mostrar (evita el flash)
 
   const area = document.getElementById('navUserArea');
   area.innerHTML = `

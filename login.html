@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
+  <style>html{background:#111110}body{visibility:hidden}</style>
+  <script>setTimeout(function(){try{document.body.style.visibility='visible'}catch(e){}},6000)</script>
 </head>
 <body class="auth-body">
 
@@ -100,7 +102,7 @@
   <script src="auth.js"></script>
   <script>
     // Redirect if already logged in
-    getSessionUser().then(u => { if (u) window.location.href = ['admin','almacen'].includes(u.role) ? 'dashboard.html' : 'index.html'; });
+    getSessionUser().then(u => { if (u) { window.location.href = ['admin','almacen'].includes(u.role) ? 'dashboard.html' : 'index.html'; } else { document.body.style.visibility = 'visible'; } }).catch(() => { document.body.style.visibility = 'visible'; });
 
     const tabs   = document.querySelectorAll('.auth-tab');
     const forms  = document.querySelectorAll('.auth-form');
