@@ -3,94 +3,132 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard — Plegados</title>
+  <title>Panel de taller — TMI Plegados</title>
   <link rel="icon" href="favicon.jpg" type="image/jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <nav class="navbar">
-    <div class="nav-brand"></div>
-    <div class="nav-links">
-      <a href="index.html" class="nav-link">Nuevo Pedido</a>
-      <a href="dashboard.html" class="nav-link active">Dashboard</a>
+  <!-- Barra superior -->
+  <nav class="topbar navbar">
+    <div class="brand">
+      <img src="tmi-wordmark.webp" alt="TMI" class="wordmark-img" />
+      <div class="divx"></div>
+      <div class="sect ey">Plegados · Panel de taller</div>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">Nuevo pedido</a>
+        <a href="dashboard.html" class="nav-link active">Dashboard</a>
+      </div>
     </div>
-    <div class="nav-user" id="navUserArea">
-      <button class="btn btn-secondary btn-sm theme-toggle">☀️</button>
-    </div>
+    <!-- dashboard.js rellena aquí avatar, nombre, rol y el botón Salir -->
+    <div class="nav-user" id="navUserArea"></div>
   </nav>
 
-  <!-- Filter bar -->
-  <div class="bi-filterbar">
-    <div class="bi-filters-row">
-      <div class="bi-filter-item">
-        <label class="bi-filter-label">Montador</label>
-        <select id="fMontador" class="bi-select"><option value="">Todos</option></select>
-      </div>
-      <div class="bi-filter-item">
-        <label class="bi-filter-label">Estado</label>
-        <select id="fEstado" class="bi-select">
-          <option value="">Todos</option>
-          <option value="Pendiente">Pendiente</option>
-          <option value="Completado">Completado</option>
-          <option value="En taller">En taller</option>
-          <option value="Entregado a montador">Entregado a montador</option>
-          <option value="Entregado a reparto">Entregado a reparto</option>
-        </select>
-      </div>
-      <div class="bi-filter-item">
-        <label class="bi-filter-label">Desde</label>
-        <input type="date" id="fDesde" class="bi-date" />
-      </div>
-      <div class="bi-filter-item">
-        <label class="bi-filter-label">Hasta</label>
-        <input type="date" id="fHasta" class="bi-date" />
-      </div>
-      <button class="btn btn-secondary btn-sm" id="fReset">↺ Limpiar</button>
-      <button class="btn btn-secondary btn-sm" id="refreshBtn">⟳ Actualizar</button>
-    </div>
-    <div class="active-chips" id="activeChips"></div>
-  </div>
+  <main class="page">
 
-  <main class="bi-container">
-
-    <!-- KPI row principal -->
-    <div class="kpi-row">
-      <div class="kpi-card">
-        <span class="kpi-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"/></svg>
-        </span>
-        <div class="kpi-body">
-          <span class="kpi-num" id="kpiTotalNum">0</span>
-          <span class="kpi-label">Total pedidos</span>
-        </div>
+    <!-- KPIs -->
+    <div class="kpis kpi-row">
+      <div class="kpi kpi-card accent">
+        <div class="glow"></div>
+        <span class="lab kpi-label">Total pedidos</span>
+        <span class="num kpi-num" id="kpiTotalNum">0</span>
+        <span class="sub">Montadores · con los filtros activos</span>
       </div>
-      <div class="kpi-card kpi-yellow">
-        <span class="kpi-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </span>
-        <div class="kpi-body">
-          <span class="kpi-num" id="kpiPendienteNum">0</span>
-          <span class="kpi-label">Pendientes</span>
-          <span class="kpi-pct" id="kpiPendientePct"></span>
-        </div>
+      <div class="kpi kpi-card">
+        <span class="lab kpi-label">Pendientes</span>
+        <span class="num kpi-num" id="kpiPendienteNum">0</span>
+        <span class="sub kpi-pct" id="kpiPendientePct"></span>
       </div>
-      <div class="kpi-card kpi-green">
-        <span class="kpi-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </span>
-        <div class="kpi-body">
-          <span class="kpi-num" id="kpiCompletadoNum">0</span>
-          <span class="kpi-label">Completados</span>
-          <span class="kpi-pct" id="kpiCompletadoPct"></span>
-        </div>
+      <div class="kpi kpi-card">
+        <span class="lab kpi-label">Completados</span>
+        <span class="num kpi-num" id="kpiCompletadoNum">0</span>
+        <span class="sub kpi-pct" id="kpiCompletadoPct"></span>
       </div>
     </div>
 
-    <!-- Charts 2x2 -->
+    <!-- TABLERO: Por hacer / Finalizados (pedidos de almacén) -->
+    <div class="board">
+      <!-- POR HACER = almacén activo (no finalizado) -->
+      <section>
+        <div class="col-head" id="almacenToggle" style="cursor:pointer;user-select:none">
+          <div class="bar"></div>
+          <h2 class="col-title cond">Por hacer</h2>
+          <span class="count" id="almacenCount"></span>
+          <div class="section-actions">
+            <button class="btn btn-secondary btn-sm" id="exportCsvAlmacen" title="Exportar todos los pedidos de almacén (activos + historial)">⬇ CSV</button>
+            <span class="chev" id="almacenChevron" style="transform:rotate(90deg)">▸</span>
+          </div>
+        </div>
+        <div id="almacenCollapsible">
+          <div id="almacenTable">
+            <div class="stack" id="almacenBody"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FINALIZADOS = historial de almacén (esFinalizado) -->
+      <section>
+        <div class="col-head" id="almacenHistToggle" style="cursor:pointer;user-select:none">
+          <div class="bar dim"></div>
+          <h2 class="col-title cond">Finalizados</h2>
+          <span class="count" id="almacenHistCount"></span>
+          <div class="section-actions">
+            <span class="chev" id="almacenHistChevron" style="transform:rotate(90deg)">▸</span>
+          </div>
+        </div>
+        <div id="almacenHistCollapsible">
+          <div id="almacenHistTable">
+            <div class="stack" id="almacenHistBody"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- MONTADORES -->
+    <div class="col-head">
+      <div class="bar"></div>
+      <h2 class="col-title cond">Montadores</h2>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bi-filterbar" style="padding:0 0 14px">
+      <div class="bi-filters-row">
+        <div class="bi-filter-item">
+          <label class="bi-filter-label">Montador</label>
+          <select id="fMontador" class="bi-select"><option value="">Todos</option></select>
+        </div>
+        <div class="bi-filter-item">
+          <label class="bi-filter-label">Estado</label>
+          <select id="fEstado" class="bi-select">
+            <option value="">Todos</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Completado">Completado</option>
+            <option value="En taller">En taller</option>
+            <option value="Entregado a montador">Entregado a montador</option>
+            <option value="Entregado a reparto">Entregado a reparto</option>
+          </select>
+        </div>
+        <div class="bi-filter-item">
+          <label class="bi-filter-label">Desde</label>
+          <input type="date" id="fDesde" class="bi-date" />
+        </div>
+        <div class="bi-filter-item">
+          <label class="bi-filter-label">Hasta</label>
+          <input type="date" id="fHasta" class="bi-date" />
+        </div>
+        <button class="btn btn-secondary btn-sm" id="fReset">↺ Limpiar</button>
+        <button class="btn btn-secondary btn-sm" id="refreshBtn">⟳ Actualizar</button>
+      </div>
+      <div class="active-chips" id="activeChips"></div>
+    </div>
+
+    <!-- Gráficas -->
     <div class="charts-grid">
       <div class="chart-card">
         <div class="chart-header">
-          <h3 class="chart-title">Pedidos por Estado</h3>
+          <h3 class="chart-title cond">Pedidos por estado</h3>
           <span class="chart-hint">Clic para filtrar</span>
         </div>
         <div class="chart-wrap chart-wrap-sm">
@@ -99,7 +137,7 @@
       </div>
       <div class="chart-card">
         <div class="chart-header">
-          <h3 class="chart-title">Evolución Temporal</h3>
+          <h3 class="chart-title cond">Evolución temporal</h3>
           <span class="chart-hint">Últimos 30 días</span>
         </div>
         <div class="chart-wrap">
@@ -108,15 +146,15 @@
       </div>
     </div>
 
-    <!-- Table -->
+    <!-- Tabla de montadores -->
     <div class="table-card">
       <div class="table-topbar">
-        <div>
-          <h3 class="chart-title" style="margin:0">Pedidos de montadores</h3>
+        <div class="ttl">
+          <h3 class="chart-title cond">Pedidos de montadores</h3>
           <span class="table-count" id="tableCount"></span>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input type="text" id="tableSearch" class="search-input" style="width:220px;margin:0" placeholder="Buscar..."/>
+        <div class="section-actions">
+          <input type="text" id="tableSearch" class="search-input" placeholder="Buscar por referencia, montador…" />
           <button class="btn btn-secondary btn-sm" id="exportCsv">⬇ CSV</button>
           <!-- Oculto: el borrado está deshabilitado. Lo muestra dashboard.js si
                BORRADO_HABILITADO es true. Ver MIGRACION-SEGURIDAD.md, Parte 1.5. -->
@@ -143,82 +181,17 @@
       </div>
     </div>
 
-    <!-- Pedidos de almacén collapsible -->
+    <!-- Usuarios -->
     <div class="table-card" style="margin-top:24px">
-      <div class="table-topbar" id="almacenToggle" style="cursor:pointer;user-select:none">
-        <div style="display:flex;align-items:center;gap:10px">
-          <h3 class="chart-title" style="margin:0">Pedidos de almacén</h3>
-          <span class="table-count" id="almacenCount"></span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="btn btn-secondary btn-sm" id="exportCsvAlmacen" title="Exportar todos los pedidos de almacén (activos + historial)">⬇ CSV</button>
-          <span id="almacenChevron" style="font-size:18px;color:var(--text-muted);transition:transform .2s">▸</span>
-        </div>
-      </div>
-      <div id="almacenCollapsible" style="display:none">
-        <div class="table-wrap">
-          <table class="bi-table" id="almacenTable">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Solicitante</th>
-                <th>Fecha</th>
-                <th>Referencia</th>
-                <th>RAL</th>
-                <th>Cant.</th>
-                <th>Estado</th>
-                <th>Dibujo</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="almacenBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Historial de almacén (finalizados: Completado o posterior) collapsible -->
-    <div class="table-card" style="margin-top:24px">
-      <div class="table-topbar" id="almacenHistToggle" style="cursor:pointer;user-select:none">
-        <div style="display:flex;align-items:center;gap:10px">
-          <h3 class="chart-title" style="margin:0">Historial de almacén</h3>
-          <span class="table-count" id="almacenHistCount"></span>
-        </div>
-        <span id="almacenHistChevron" style="font-size:18px;color:var(--text-muted);transition:transform .2s">▸</span>
-      </div>
-      <div id="almacenHistCollapsible" style="display:none">
-        <div class="table-wrap">
-          <table class="bi-table" id="almacenHistTable">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Solicitante</th>
-                <th>Fecha</th>
-                <th>Referencia</th>
-                <th>RAL</th>
-                <th>Cant.</th>
-                <th>Estado</th>
-                <th>Dibujo</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="almacenHistBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Users collapsible -->
-    <div class="table-card" style="margin-top:24px">
-      <div class="table-topbar" id="usersToggle" style="cursor:pointer;user-select:none">
-        <div style="display:flex;align-items:center;gap:10px">
-          <h3 class="chart-title" style="margin:0">Usuarios registrados</h3>
+      <div class="table-topbar" id="usersToggle" style="cursor:pointer;user-select:none;margin-bottom:0">
+        <div class="ttl">
+          <h3 class="chart-title cond">Usuarios registrados</h3>
           <span class="table-count" id="usersCount"></span>
         </div>
-        <span id="usersChevron" style="font-size:18px;color:var(--text-muted);transition:transform .2s">▸</span>
+        <span class="chev" id="usersChevron">▸</span>
       </div>
       <div id="usersCollapsible" style="display:none">
-        <div class="table-wrap">
+        <div class="table-wrap" style="margin-top:16px">
           <table class="bi-table" id="usersTable">
             <thead>
               <tr>
@@ -240,12 +213,12 @@
 
   <!-- Modal nota -->
   <div class="modal-overlay" id="noteModalOverlay" style="display:none">
-    <div class="modal" style="max-width:420px">
+    <div class="modal" style="width:460px">
       <div class="modal-header">
-        <h2 id="noteModalTitle">Nota del pedido</h2>
-        <button class="modal-close" id="noteModalClose">✕</button>
+        <h2 id="noteModalTitle" class="cond">Nota del pedido</h2>
+        <button class="modal-close" id="noteModalClose" aria-label="Cerrar">✕</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="padding:20px 24px">
         <textarea id="noteTextarea" rows="5" placeholder="Escribe una nota para este pedido..." style="width:100%;resize:vertical"></textarea>
         <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
           <button class="btn btn-secondary btn-sm" id="noteModalCancel">Cancelar</button>
@@ -259,8 +232,8 @@
   <div class="modal-overlay" id="modalOverlay" style="display:none">
     <div class="modal">
       <div class="modal-header">
-        <h2 id="modalTitle">Detalle del Pedido</h2>
-        <button class="modal-close" id="modalClose">✕</button>
+        <h2 id="modalTitle" class="cond">Detalle del pedido</h2>
+        <button class="modal-close" id="modalClose" aria-label="Cerrar">✕</button>
       </div>
       <div class="modal-body" id="modalBody"></div>
     </div>

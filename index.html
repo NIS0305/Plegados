@@ -3,54 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nuevo Pedido — Plegados</title>
+  <title>Nuevo pedido — TMI Plegados</title>
   <link rel="icon" href="favicon.jpg" type="image/jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <nav class="navbar">
-    <div class="nav-brand"></div>
-    <div class="nav-links">
-      <a href="index.html" class="nav-link active">Nuevo Pedido</a>
-      <a href="dashboard.html" class="nav-link">Dashboard</a>
+  <!-- Barra superior -->
+  <nav class="topbar navbar">
+    <div class="brand">
+      <img src="tmi-wordmark.webp" alt="TMI" class="wordmark-img" />
+      <div class="divx"></div>
+      <div class="sect ey">Plegados · Montador</div>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link active">Nuevo pedido</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+      </div>
     </div>
     <div class="nav-user">
-      <span class="nav-avatar" id="navAvatar"></span>
+      <span class="badge-role">Montador</span>
       <span class="nav-username" id="navUsername"></span>
-      <button class="btn btn-secondary btn-sm theme-toggle">☀️</button>
+      <span class="nav-avatar cond" id="navAvatar"></span>
       <button class="btn btn-secondary btn-sm" id="logoutBtn">Salir</button>
     </div>
   </nav>
 
-  <main class="container">
-    <div class="card">
-      <div class="form-logo-wrap">
-        <img src="logo.png" alt="Lumon" class="form-logo" />
-      </div>
+  <main class="page two">
+
+    <!-- NUEVO PEDIDO -->
+    <section class="panel">
+      <div class="ph-head"><div class="eyebar"></div><h2 class="ph-title cond">Nuevo pedido</h2></div>
 
       <form id="pedidoForm" novalidate>
 
-        <div class="form-group" style="display:flex;align-items:center;gap:10px">
-          <label style="margin:0;white-space:nowrap;font-weight:800;font-size:26px">Hola!</label>
-          <span id="montador" style="font-weight:600;font-size:26px;color:var(--text)"></span>
-          <input type="hidden" id="montadorHidden" />
-        </div>
-
-
-        <div class="form-group">
-          <label for="cantidad">Cantidad de Piezas *</label>
-          <input type="number" id="cantidad" placeholder="1" min="1" value="1" required />
-          <span class="error-msg" id="err-cantidad"></span>
+        <div class="two-col">
+          <div class="form-group">
+            <label>Montador</label>
+            <div class="input-readonly" id="montador"></div>
+            <input type="hidden" id="montadorHidden" />
+          </div>
+          <div class="form-group">
+            <label for="cantidad">Cantidad de piezas *</label>
+            <input type="number" id="cantidad" placeholder="Nº de piezas" min="1" value="1" required />
+            <span class="error-msg" id="err-cantidad"></span>
+          </div>
         </div>
 
         <div class="two-col">
           <div class="form-group">
-            <label for="referencia">Número de Referencia</label>
-            <input type="text" id="referencia" placeholder="Ej: REF-2024-001" />
+            <label for="referencia">Nº de referencia</label>
+            <input type="text" id="referencia" placeholder="Ej. 50999999" />
           </div>
           <div class="form-group">
             <label for="ral">Color RAL</label>
-            <input type="text" id="ral" placeholder="Ej: RAL 9005" />
+            <input type="text" id="ral" placeholder="Ej. RAL 7016" />
           </div>
         </div>
 
@@ -61,18 +69,20 @@
         </div>
 
         <div class="form-group">
-          <label for="notas">Notas adicionales</label>
-          <textarea id="notas" rows="3" placeholder="Observaciones, tolerancias, acabado superficial..."></textarea>
+          <label for="notas">Notas para el taller</label>
+          <textarea id="notas" rows="3" placeholder="Chapa / cristal / mixto, tolerancias, acabado…"></textarea>
         </div>
 
         <div class="form-group">
-          <label>Dibujo / Plano</label>
+          <label>Plano o dibujo</label>
           <div class="upload-area" id="uploadArea">
             <input type="file" id="dibujo" accept="image/*,.pdf" hidden />
             <div class="upload-content" id="uploadContent">
-              <span class="upload-icon">📎</span>
-              <p>Arrastra tu archivo aquí o <button type="button" class="link-btn" id="browseBtn">selecciona un archivo</button></p>
-              <p class="upload-hint">Imágenes (JPG, PNG, SVG) o PDF</p>
+              <span class="upload-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="1.8" style="margin:0 auto"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>
+              </span>
+              <p>Arrastra el archivo o <button type="button" class="link-btn" id="browseBtn">búscalo</button></p>
+              <p class="upload-hint">PDF, JPG o PNG · máx. 10 MB</p>
             </div>
             <div class="file-preview" id="filePreview" style="display:none">
               <img id="previewImg" src="" alt="Vista previa" />
@@ -85,39 +95,38 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Enviar Pedido</button>
+          <button type="submit" class="btn btn-primary">Enviar pedido</button>
           <button type="reset" class="btn btn-secondary" id="resetBtn">Limpiar</button>
         </div>
 
       </form>
-    </div>
+    </section>
 
-    <!-- Historial del usuario -->
-    <div class="card" style="margin-top:24px">
-      <div class="section-header">
-        <h2 class="card-title" style="margin-bottom:0">Mis Pedidos</h2>
+    <!-- MIS PEDIDOS -->
+    <section class="panel">
+      <div class="ph-head">
+        <div class="eyebar"></div>
+        <h2 class="ph-title cond">Mis pedidos</h2>
         <span class="count-badge" id="myCount">0</span>
-      </div>
-      <p class="card-subtitle">Historial de tus solicitudes de plegado</p>
-
-      <div class="filter-bar" style="margin-bottom:16px">
-        <select id="myFilterEstado" class="filter-select" style="width:auto">
-          <option value="">Todos los estados</option>
-          <option value="Pendiente">Pendiente</option>
-          <option value="Completado">Completado</option>
-        </select>
+        <div class="section-actions">
+          <select id="myFilterEstado" class="filter-select" style="width:auto;height:36px">
+            <option value="">Todos los estados</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Completado">Completado</option>
+          </select>
+        </div>
       </div>
 
       <div id="misPedidosList" class="pedidos-list"></div>
-    </div>
+    </section>
   </main>
 
   <!-- Modal detalle -->
   <div class="modal-overlay" id="modalOverlay" style="display:none">
     <div class="modal">
       <div class="modal-header">
-        <h2 id="modalTitle">Detalle del Pedido</h2>
-        <button class="modal-close" id="modalClose">✕</button>
+        <h2 id="modalTitle" class="cond">Detalle del pedido</h2>
+        <button class="modal-close" id="modalClose" aria-label="Cerrar">✕</button>
       </div>
       <div class="modal-body" id="modalBody"></div>
     </div>

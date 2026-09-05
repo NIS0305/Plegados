@@ -3,20 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Acceso Almacén — Plegados</title>
+  <title>Acceso Almacén — TMI Plegados</title>
   <link rel="icon" href="favicon.jpg" type="image/jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="auth-body">
-  <button class="theme-toggle-float">☀️</button>
 
-  <div class="auth-wrapper">
-    <div class="auth-brand">
-      <img src="logo.png" alt="Lumon" style="height:64px;width:auto;filter:brightness(0) invert(1);margin-bottom:12px" />
-      <p>Acceso exclusivo — Almacén</p>
+  <!-- Panel de marca -->
+  <div class="auth-left">
+    <div class="lgrid-glow"></div>
+    <img src="tmi-gecko.webp" alt="" class="auth-gecko" />
+    <img src="tmi-wordmark.webp" alt="TMI" class="wordmark-img" />
+    <div class="hero">
+      <div class="eyebrow-row"><span class="eyebar"></span><span class="ey">Gestión de pedidos · Almacén</span></div>
+      <h1 class="cond">Almacén<br><span>en control.</span></h1>
+      <p>Los pedidos que entran por email y por el taller, en la misma pantalla que administración: por hacer y finalizados, sin perder ninguno.</p>
     </div>
+    <div class="claim ey">Diseño · Fabricación · Soluciones</div>
+  </div>
 
+  <!-- Formulario -->
+  <div class="auth-right">
     <div class="auth-card">
+      <div class="kh cond">Acceso almacén</div>
+      <div class="ks">Acceso exclusivo para la cuenta de almacén.</div>
+
       <!-- Sin pestaña de registro: el alta de cuentas de almacén se hace en la
            base de datos. El autoservicio exigía un código de almacén que viajaba
            en claro en el JavaScript. Ver README.md. -->
@@ -40,6 +54,7 @@
         <p class="auth-hint">Las cuentas de almacén las da de alta el administrador.</p>
       </form>
 
+      <div class="auth-foot ey">© 2026 TMI — Tenkai Global, S.L.</div>
     </div>
   </div>
 

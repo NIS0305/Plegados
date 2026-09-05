@@ -24,12 +24,12 @@
 const BORRADO_HABILITADO = false;
 
 const COLORS = {
-  'Pendiente':            '#f59e0b',
-  'En proceso':           '#3b82f6',
-  'Completado':           '#10b981',
-  'En taller':            '#6366f1',
-  'Entregado a montador': '#0d9488',
-  'Entregado a reparto':  '#059669',
+  'Pendiente':            '#6E6E6D',
+  'En proceso':           '#A3E635',
+  'Completado':           '#2D7C02',
+  'En taller':            '#5A9E1A',
+  'Entregado a montador': '#B7B7B6',
+  'Entregado a reparto':  '#3F5B2A',
 };
 
 const ESTADOS = ['Pendiente', 'Completado', 'En taller', 'Entregado a montador', 'Entregado a reparto'];
@@ -115,17 +115,17 @@ function countBy(list, key) {
 
 function initCharts() {
   if (typeof Chart === 'undefined') return;
-  Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  Chart.defaults.color = '#7a90b8';
+  Chart.defaults.font.family = 'Inter, Barlow, system-ui, sans-serif';
+  Chart.defaults.color = '#8f8f88';
   Chart.defaults.plugins.legend.display = false;
 
   charts.estado = new Chart(document.getElementById('chartEstado'), {
     type: 'doughnut',
-    data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 2, borderColor: '#111827', hoverOffset: 6 }] },
+    data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 2, borderColor: '#1A1A18', hoverOffset: 6 }] },
     options: {
       responsive: true, maintainAspectRatio: false, cutout: '62%',
       plugins: {
-        legend: { display: true, position: 'bottom', labels: { padding: 16, boxWidth: 12, color: '#7a90b8' } },
+        legend: { display: true, position: 'bottom', labels: { padding: 16, boxWidth: 12, color: '#8f8f88' } },
         tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} pedidos` } },
       },
       onClick: (e, els) => {
@@ -144,8 +144,8 @@ function initCharts() {
     data: {
       labels: [],
       datasets: [{
-        data: [], borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,.1)',
-        borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#4f8ef7',
+        data: [], borderColor: '#A3E635', backgroundColor: 'rgba(163,230,53,.10)',
+        borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#A3E635',
         fill: true, tension: 0.4,
       }],
     },
@@ -153,8 +153,8 @@ function initCharts() {
       responsive: true, maintainAspectRatio: false,
       plugins: { tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y} pedidos` } } },
       scales: {
-        x: { grid: { display: false }, ticks: { color: '#7a90b8' } },
-        y: { beginAtZero: true, ticks: { stepSize: 1, color: '#7a90b8' }, grid: { color: 'rgba(255,255,255,.05)' } },
+        x: { grid: { display: false }, ticks: { color: '#8f8f88' } },
+        y: { beginAtZero: true, ticks: { stepSize: 1, color: '#8f8f88' }, grid: { color: 'rgba(255,255,255,.06)' } },
       },
     },
   });
@@ -254,10 +254,10 @@ function renderTable(list) {
       <td>
         <div style="display:flex;gap:4px">
           <button class="icon-btn" data-action="ver" data-id="${p.id}" title="Detalle">🔍</button>
-          <button class="icon-btn${p.notaAdmin ? ' nota-activa' : ''}" data-action="nota" data-id="${p.id}" title="${p.notaAdmin ? 'Editar nota' : 'Agregar nota'}" style="${p.notaAdmin ? 'color:#4f8ef7;border-color:#4f8ef7' : ''}">✏️</button>
+          <button class="icon-btn${p.notaAdmin ? ' nota-activa' : ''}" data-action="nota" data-id="${p.id}" title="${p.notaAdmin ? 'Editar nota' : 'Agregar nota'}" style="${p.notaAdmin ? 'color:var(--lime);border-color:var(--lime)' : ''}">✏️</button>
           ${BORRADO_HABILITADO ? `<button class="icon-btn del" data-action="del" data-id="${p.id}" title="Eliminar">🗑️</button>` : ''}
         </div>
-        ${p.notaAdmin ? `<div style="margin-top:5px;font-size:11px;color:#7a90b8;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.notaAdmin)}">📝 ${escHtml(p.notaAdmin)}</div>` : ''}
+        ${p.notaAdmin ? `<div style="margin-top:5px;font-size:11px;color:var(--ash);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.notaAdmin)}">📝 ${escHtml(p.notaAdmin)}</div>` : ''}
       </td>
     </tr>`;
   }).join('');
@@ -422,36 +422,45 @@ function getAlmacenPedidos() {
 // MISMAS acciones (select de estado, ver, nota...), para que un pedido marcado
 // por error como finalizado se pueda reabrir desde el historial cambiando el estado.
 function filaAlmacen(p) {
-  let dibujoHtml = '—';
-  const imgUrl  = p.filePath ? getPublicUrl(p.filePath) : null;
-  const isImage = p.fileType?.startsWith('image/') || /\.(jpg|jpeg|png|svg|webp)$/i.test(p.filePath || '');
-  if (imgUrl && isImage)
-    dibujoHtml = `<img src="${imgUrl}" class="table-thumb" data-action="ver" data-id="${p.id}" title="Ver dibujo" />`;
-  else if (imgUrl)
-    dibujoHtml = `<span style="cursor:pointer;font-size:20px" data-action="ver" data-id="${p.id}" title="${escHtml(p.fileName)}">📄</span>`;
-
-  return `<tr>
-    <td class="td-id">#${p.id}</td>
-    <td><strong>${escHtml(p.montador)}</strong>${p.origen === 'email' ? ' <span class="badge badge-gray" style="font-size:10px" title="Pedido recibido por email">\u2709 Email</span>' : ''}</td>
-    <td class="td-sm">${escHtml(p.fecha)}</td>
-    <td class="td-sm">${escHtml(p.referencia) || '—'}</td>
-    <td class="td-sm">${escHtml(p.ral) || '—'}</td>
-    <td style="text-align:center">${escHtml(p.cantidad)}</td>
-    <td>
-      <select class="estado-select-table" data-id="${p.id}">
-        ${ESTADOS.map(s => `<option value="${s}"${s === p.estado ? ' selected' : ''}>${s}</option>`).join('')}
-      </select>
-    </td>
-    <td style="text-align:center">${dibujoHtml}</td>
-    <td>
-      <div style="display:flex;gap:4px">
-        <button class="icon-btn" data-action="ver" data-id="${p.id}" title="Detalle">🔍</button>
-        <button class="icon-btn${p.notaAdmin ? ' nota-activa' : ''}" data-action="nota" data-id="${p.id}" title="${p.notaAdmin ? 'Editar nota' : 'Agregar nota'}" style="${p.notaAdmin ? 'color:#4f8ef7;border-color:#4f8ef7' : ''}">✏️</button>
-        <button class="icon-btn del" data-action="del" data-id="${p.id}" title="Eliminar">🗑️</button>
+  // Tarjeta del tablero POR HACER / FINALIZADOS. Mismo contrato que la fila
+  // anterior: <select class="estado-select-table" data-id>, data-action="ver"
+  // y data-action="nota" con data-id. Sin botón de borrado (RLS lo deniega).
+  const fin      = esFinalizado(p.estado);
+  const proc     = p.estado === 'En proceso';
+  const accent   = fin ? 'done' : (proc ? '' : 'pend');
+  const imgUrl   = p.filePath ? getPublicUrl(p.filePath) : null;
+  const isImage  = p.fileType?.startsWith('image/') || /\.(jpg|jpeg|png|svg|webp)$/i.test(p.filePath || '');
+  const plano    = imgUrl
+    ? (isImage
+        ? `<img src="${imgUrl}" class="table-thumb" data-action="ver" data-id="${p.id}" title="Ver plano" />`
+        : `<button class="ico" data-action="ver" data-id="${p.id}" title="${escHtml(p.fileName)}">📄</button>`)
+    : '';
+  const origen   = p.origen === 'email'
+    ? '<span class="tag email" title="Pedido recibido por email">Email</span>'
+    : '<span class="tag mont">Almacén</span>';
+  const ref      = p.referencia ? escHtml(p.referencia) : `#${p.id}`;
+  const meta     = [escHtml(p.montador), p.ral ? escHtml(p.ral) : '', p.cantidad != null ? `${escHtml(p.cantidad)} ${Number(p.cantidad) === 1 ? 'pza' : 'pzas'}` : ''].filter(Boolean).join(' · ');
+  return `<div class="card${fin ? ' done' : ''}" data-id="${p.id}">
+    <div class="accentbar ${accent}"></div>
+    <div class="body">
+      <div class="c-l">
+        <div class="c-ref cond">${ref}</div>
+        <div class="c-meta">${origen} <span>${meta}</span></div>
+        ${fin ? `<div class="done-when"><span class="tick">✓</span> ${escHtml(p.estado)} · ${escHtml(p.fecha)}</div>` : `<div class="c-meta"><span>${escHtml(p.fecha)}</span></div>`}
+        ${p.notaAdmin ? `<div class="c-note"><b>Nota taller</b> ${escHtml(p.notaAdmin)}</div>` : ''}
       </div>
-      ${p.notaAdmin ? `<div style="margin-top:5px;font-size:11px;color:#7a90b8;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.notaAdmin)}">📝 ${escHtml(p.notaAdmin)}</div>` : ''}
-    </td>
-  </tr>`;
+      <div class="c-r">
+        <select class="estado-select-table" data-id="${p.id}" title="Cambiar estado">
+          ${ESTADOS.map(s => `<option value="${s}"${s === p.estado ? ' selected' : ''}>${s}</option>`).join('')}
+        </select>
+        <div class="acts">
+          ${plano}
+          <button class="ico" data-action="ver" data-id="${p.id}" title="Detalle">🔍</button>
+          <button class="ico${p.notaAdmin ? ' key' : ''}" data-action="nota" data-id="${p.id}" title="${p.notaAdmin ? 'Editar nota' : 'Agregar nota'}">✏️</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
 }
 
 function renderAlmacenTabla(bodyId, countId, pedidos, textoVacio) {
@@ -462,7 +471,7 @@ function renderAlmacenTabla(bodyId, countId, pedidos, textoVacio) {
   if (!tbody) return;
 
   if (!pedidos.length) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">${textoVacio}</td></tr>`;
+    tbody.innerHTML = `<div class="empty-state"><span class="empty-icon">—</span><p>${textoVacio}</p></div>`;
     return;
   }
   tbody.innerHTML = pedidos.map(filaAlmacen).join('');
@@ -629,9 +638,9 @@ document.getElementById('ordersTable').addEventListener('click', e => {
 
   const area = document.getElementById('navUserArea');
   area.innerHTML = `
-    <span class="nav-avatar">${u.nombre.charAt(0).toUpperCase()}</span>
     <span class="nav-username">${escHtml(u.nombre)}</span>
-    ${u.role === 'almacen' ? '<span class="badge badge-teal" style="font-size:11px">Almacén</span>' : '<span class="badge badge-blue" style="font-size:11px">Admin</span>'}
+    <span class="nav-avatar cond">${u.nombre.charAt(0).toUpperCase()}</span>
+    <span class="badge-role staff">${u.role === 'almacen' ? 'Almacén' : 'Admin'}</span>
     <button class="btn btn-secondary btn-sm" id="logoutBtn">Salir</button>`;
   document.getElementById('logoutBtn').addEventListener('click', logout);
 

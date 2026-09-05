@@ -76,84 +76,62 @@ function renderMontadorStepper(estado) {
 function openModal(pedido) {
   const body = document.getElementById('modalBody');
   if (!body) return;
-  document.getElementById('modalTitle').textContent = `Pedido #${pedido.id}`;
+  document.getElementById('modalTitle').textContent = pedido.referencia ? `Pedido ${pedido.referencia}` : `Pedido #${pedido.id}`;
 
-  let imgHtml = '';
   const imgUrl  = pedido.filePath ? getPublicUrl(pedido.filePath) : (pedido.fileData || null);
   const isImage = pedido.fileType?.startsWith('image/') ||
                   /\.(jpg|jpeg|png|svg|webp)$/i.test(pedido.filePath || '');
 
-  if (imgUrl && isImage) {
-    imgHtml = `<div class="detail-row">
-      <div class="detail-label">Dibujo adjunto</div>
-      <img src="${imgUrl}" class="modal-img" alt="Dibujo" />
-    </div>`;
-  } else if (imgUrl) {
-    imgHtml = `<div class="detail-row">
-      <div class="detail-label">Archivo adjunto</div>
-      <p class="detail-value"><a href="${imgUrl}" target="_blank" style="color:var(--blue)">📄 ${escHtml(pedido.fileName)}</a></p>
-    </div>`;
-  }
+  // Plano adjunto: imagen en la "hoja"; si es otro tipo, un enlace al archivo.
+  const planoHtml = imgUrl && isImage
+    ? `<img src="${imgUrl}" class="modal-img" alt="Dibujo" />`
+    : imgUrl
+      ? `<a href="${imgUrl}" target="_blank" rel="noopener" class="obtn">📄 ${escHtml(pedido.fileName || 'Abrir archivo')}</a>`
+      : `<span class="no-plano">Sin plano adjunto</span>`;
 
   // Documentos del pedido (PDF del plano y etiqueta), p.ej. los que genera n8n.
   const pdfUrl = pedido.pdfPath      ? getPublicUrl(pedido.pdfPath)      : null;
   const etqUrl = pedido.etiquetaPath ? getPublicUrl(pedido.etiquetaPath) : null;
-  const docRow = (url, label, icon) => url ? `<div class="detail-row">
-      <div class="detail-label">${label}</div>
-      <div class="detail-value">
-        <a href="${url}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="text-decoration:none;display:inline-flex;gap:6px;align-items:center">${icon} Abrir / Imprimir</a>
-      </div>
+  const pdfHtml = pdfUrl ? `<div class="doc">
+      <div class="dl"><div class="di">🖨️</div><div><div class="dt cond">Plano (PDF)</div><div class="ds">${escHtml(pedido.fileName || 'plano.pdf')}</div></div></div>
+      <a href="${pdfUrl}" target="_blank" rel="noopener" class="obtn">Abrir / Imprimir</a>
     </div>` : '';
-  const pdfHtml      = docRow(pdfUrl, 'Plano (PDF)', '🖨️');
   const etiquetaHtml = etqUrl
-    ? docRow(etqUrl, 'Etiqueta', '🏷️')
-    : `<div class="detail-row">
-      <div class="detail-label">Etiqueta</div>
-      <div class="detail-value">
-        <button type="button" id="genEtiquetaBtn" class="btn btn-primary btn-sm" data-id="${pedido.id}" data-ref="${escHtml(pedido.referencia || '')}" style="display:inline-flex;gap:6px;align-items:center;cursor:pointer">🏷️ Generar etiqueta</button>
-      </div>
+    ? `<div class="doc">
+      <div class="dl"><div class="di key">🏷️</div><div><div class="dt cond">Etiqueta</div><div class="ds">Generada</div></div></div>
+      <a href="${etqUrl}" target="_blank" rel="noopener" class="obtn">Abrir / Imprimir</a>
+    </div>`
+    : `<div class="doc">
+      <div class="dl"><div class="di key">🏷️</div><div><div class="dt cond">Etiqueta</div><div class="ds">Aún no generada</div></div></div>
+      <button type="button" id="genEtiquetaBtn" class="gbtn cond" data-id="${pedido.id}" data-ref="${escHtml(pedido.referencia || '')}">＋ Generar etiqueta</button>
     </div>`;
 
+  const origen = pedido.origen === 'email' ? '<span class="tag email">Email</span>' : '';
+  const row = (k, v, long) => v == null || v === '' ? '' : `<div class="row${long ? ' long' : ''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+
   body.innerHTML = `
-    <div class="detail-row">
-      <div class="detail-label">Montador</div>
-      <div class="detail-value">${escHtml(pedido.montador)}</div>
+    <div class="mgrid">
+      <div class="plano">
+        <div class="lab">Plano adjunto</div>
+        <div class="sheet">${planoHtml}</div>
+      </div>
+      <div class="detail">
+        ${row('Solicitante', `${escHtml(pedido.montador)} ${origen}`)}
+        ${row('Fecha', escHtml(pedido.fecha))}
+        ${row('Estado', `<span class="badge ${badgeClass(pedido.estado)}">${escHtml(pedido.estado)}</span>`)}
+        ${row('Cantidad', `${escHtml(pedido.cantidad)} ${Number(pedido.cantidad) === 1 ? 'pieza' : 'piezas'}`)}
+        ${pedido.cristalFijo != null ? row('Cristal fijo', escHtml(pedido.cristalFijo)) : ''}
+        ${row('Referencia', escHtml(pedido.referencia))}
+        ${row('Color RAL', escHtml(pedido.ral))}
+        ${row('Notas', escHtml(pedido.notas), true)}
+        ${pedido.notaAdmin ? `<div class="note"><div class="nl">Nota del taller</div><div class="nt">${escHtml(pedido.notaAdmin)}</div></div>` : ''}
+        <div class="docs">
+          ${pdfHtml}
+          ${etiquetaHtml}
+        </div>
+      </div>
     </div>
-    <div class="detail-row">
-      <div class="detail-label">Fecha</div>
-      <div class="detail-value">${pedido.fecha}</div>
-    </div>
-    <div class="detail-row">
-      <div class="detail-label">Estado</div>
-      <div class="detail-value"><span class="badge ${badgeClass(pedido.estado)}">${pedido.estado}</span></div>
-    </div>
-    <div class="detail-row">
-      <div class="detail-label">Cantidad</div>
-      <div class="detail-value">${escHtml(pedido.cantidad)} piezas</div>
-    </div>
-    ${pedido.cristalFijo != null ? `<div class="detail-row">
-      <div class="detail-label">Cristal fijo</div>
-      <div class="detail-value">${escHtml(pedido.cristalFijo)}</div>
-    </div>` : ''}
-    ${pedido.referencia ? `<div class="detail-row">
-      <div class="detail-label">Número de Referencia</div>
-      <div class="detail-value">${escHtml(pedido.referencia)}</div>
-    </div>` : ''}
-    ${pedido.ral ? `<div class="detail-row">
-      <div class="detail-label">Color RAL</div>
-      <div class="detail-value">${escHtml(pedido.ral)}</div>
-    </div>` : ''}
-    ${pedido.notas ? `<div class="detail-row">
-      <div class="detail-label">Notas</div>
-      <div class="detail-value">${escHtml(pedido.notas)}</div>
-    </div>` : ''}
-    ${pedido.notaAdmin ? `<div class="detail-row">
-      <div class="detail-label" style="color:#4f8ef7">Nota del taller</div>
-      <div class="detail-value" style="padding:8px 12px;background:rgba(79,142,247,.08);border-left:3px solid #4f8ef7;border-radius:0 6px 6px 0">${escHtml(pedido.notaAdmin)}</div>
-    </div>` : ''}
-    ${imgHtml}
-    ${pdfHtml}
-    ${etiquetaHtml}
+    ${renderStepper(pedido.estado)}
   `;
   document.getElementById('modalOverlay').style.display = 'flex';
 }
@@ -336,40 +314,41 @@ if (form) (async () => {
       return;
     }
 
-    listEl.innerHTML = pedidos.map(p => {
-      let fileHtml = '';
+    // Mismo conjunto de "finalizado" que usa el stepper del montador.
+    const FIN = ['Completado', 'En taller', 'Entregado a montador', 'Entregado a reparto'];
+    const mini = p => {
+      const fin = FIN.includes(p.estado);
       const imgUrl = p.filePath ? getPublicUrl(p.filePath) : null;
-      if (imgUrl && p.fileType?.startsWith('image/'))
-        fileHtml = `<img src="${imgUrl}" class="thumb-preview" alt="Dibujo" data-id="${p.id}" />`;
-      else if (imgUrl)
-        fileHtml = `<span class="has-file-icon" style="font-size:28px" data-id="${p.id}" title="${escHtml(p.fileName)}">📄</span>`;
-
+      const fileHtml = imgUrl && p.fileType?.startsWith('image/')
+        ? `<img src="${imgUrl}" class="thumb-preview" alt="Dibujo" data-action="ver" data-id="${p.id}" />`
+        : imgUrl ? `<span class="has-file-icon" data-action="ver" data-id="${p.id}" title="${escHtml(p.fileName)}">📄</span>` : '';
+      const meta = [`${escHtml(p.cantidad)} ${Number(p.cantidad) === 1 ? 'pza' : 'pzas'}`, p.ral ? escHtml(p.ral) : '', p.cristalFijo != null && Number(p.cristalFijo) > 0 ? `Cristal fijo ${escHtml(p.cristalFijo)}` : ''].filter(Boolean).join(' · ');
+      const pill = fin ? 'done' : (p.estado === 'En proceso' ? 'proc' : 'pend');
       return `
-      <div class="pedido-card estado-${escHtml(p.estado.replace(/ /g,'-'))}">
-        <div class="pedido-info">
-          <div class="pedido-top">
-            <span class="pedido-id">#${p.id}</span>
-            <span class="pedido-fecha">${p.fecha}</span>
-          </div>
-          <div class="medidas-row">
-            <div class="medida-item"><span>Cant.: </span>${escHtml(p.cantidad)} pz</div>
-            ${p.cristalFijo != null ? `<div class="medida-item"><span>Cristal fijo: </span>${escHtml(p.cristalFijo)}</div>` : ''}
-          </div>
-          <div class="pedido-meta">
-            <span class="badge ${badgeClass(p.estado)}">${p.estado}</span>
-            ${p.referencia ? `<span class="badge badge-gray">📎 ${escHtml(p.referencia)}</span>` : ''}
-            ${p.ral ? `<span class="badge badge-gray">🎨 ${escHtml(p.ral)}</span>` : ''}
-            ${fileHtml}
-          </div>
-          ${p.notas ? `<p style="margin-top:8px;font-size:13px;color:var(--text-dim)">📝 ${escHtml(p.notas)}</p>` : ''}
-          ${p.notaAdmin ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(79,142,247,.08);border-left:3px solid #4f8ef7;border-radius:0 6px 6px 0;font-size:13px;color:#c5d0e8"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#4f8ef7;display:block;margin-bottom:2px">Nota del taller</span>${escHtml(p.notaAdmin)}</div>` : ''}
-          ${renderMontadorStepper(p.estado)}
+      <div class="mini estado-${escHtml(p.estado.replace(/ /g,'-'))}">
+        <div class="ml">
+          <div class="mref cond${fin ? ' dim' : ''}">${p.referencia ? escHtml(p.referencia) : '#' + p.id}</div>
+          <div class="mmeta">${fin ? '<span class="tick">✓</span> ' : ''}${meta}${fin ? ' · ' + escHtml(p.fecha) : ''}</div>
+          ${p.notas ? `<div class="mini-note">${escHtml(p.notas)}</div>` : ''}
+          ${p.notaAdmin ? `<div class="mini-note"><b>Nota taller</b> ${escHtml(p.notaAdmin)}</div>` : ''}
+          ${fin ? '' : renderMontadorStepper(p.estado)}
         </div>
-        <div class="pedido-actions">
-          <button class="icon-btn" data-action="ver" data-id="${p.id}" title="Ver detalle">🔍</button>
+        <div class="mr pedido-actions">
+          ${fileHtml}
+          <span class="pill ${pill}">${escHtml(p.estado)}</span>
+          <button class="ico" data-action="ver" data-id="${p.id}" title="Ver detalle">🔍</button>
         </div>
       </div>`;
-    }).join('');
+    };
+    const porHacer   = pedidos.filter(p => !FIN.includes(p.estado));
+    const finalizados = pedidos.filter(p =>  FIN.includes(p.estado));
+    listEl.innerHTML = `
+      <div class="sub-head"><span class="t cond">Por hacer</span><span class="c">${porHacer.length}</span></div>
+      ${porHacer.length ? porHacer.map(mini).join('') : '<div class="empty-state" style="padding:14px 0"><p>Nada pendiente.</p></div>'}
+      <div class="divider"></div>
+      <div class="sub-head"><span class="t cond dim">Finalizados</span><span class="c">${finalizados.length}</span></div>
+      ${finalizados.length ? finalizados.map(mini).join('') : '<div class="empty-state" style="padding:14px 0"><p>Aún no hay pedidos finalizados.</p></div>'}
+    `;
   }
 
   // Realtime: actualiza el historial cuando el admin cambia estado o agrega nota

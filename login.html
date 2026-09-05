@@ -3,20 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Acceder — Plegados</title>
+  <title>Acceder — TMI Plegados</title>
   <link rel="icon" href="favicon.jpg" type="image/jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="auth-body">
-  <button class="theme-toggle-float">☀️</button>
 
-  <div class="auth-wrapper">
-    <div class="auth-brand">
-      <img src="logo.png" alt="Lumon" style="height:64px;width:auto;filter:brightness(0) invert(1);margin-bottom:12px" />
-      <p>Gestión de pedidos de plegado</p>
+  <!-- Panel de marca -->
+  <div class="auth-left">
+    <div class="lgrid-glow"></div>
+    <img src="tmi-gecko.webp" alt="" class="auth-gecko" />
+    <img src="tmi-wordmark.webp" alt="TMI" class="wordmark-img" />
+    <div class="hero">
+      <div class="eyebrow-row"><span class="eyebar"></span><span class="ey">Gestión de pedidos · Taller</span></div>
+      <h1 class="cond">Plegados<br><span>en control.</span></h1>
+      <p>El taller y el almacén, en una sola pantalla. Los pedidos que entran, los que están en marcha y los que ya salen — sin perder ninguno.</p>
     </div>
+    <div class="claim ey">Diseño · Fabricación · Soluciones</div>
+  </div>
 
+  <!-- Formulario -->
+  <div class="auth-right">
     <div class="auth-card">
+      <div class="kh cond">Acceder</div>
+      <div class="ks">Entra con tu cuenta de TMI Plegados.</div>
+
       <div class="auth-tabs">
         <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
         <button class="auth-tab" data-tab="register">Crear cuenta</button>
@@ -39,7 +53,7 @@
         </div>
         <div class="error-msg form-error" id="loginError"></div>
         <button type="submit" class="btn btn-primary btn-full" id="loginBtn">Entrar</button>
-        <p class="auth-hint">¿No tienes cuenta? <button type="button" class="link-btn" data-switch="register">Regístrate gratis</button></p>
+        <p class="auth-hint">¿No tienes cuenta? <button type="button" class="link-btn" data-switch="register">Crear una cuenta</button></p>
       </form>
 
       <!-- REGISTER -->
@@ -75,6 +89,8 @@
         <button type="submit" class="btn btn-primary btn-full" id="registerBtn">Crear cuenta</button>
         <p class="auth-hint">¿Ya tienes cuenta? <button type="button" class="link-btn" data-switch="login">Inicia sesión</button></p>
       </form>
+
+      <div class="auth-foot ey">© 2026 TMI — Tenkai Global, S.L.</div>
     </div>
   </div>
 

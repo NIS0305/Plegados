@@ -1,20 +1,36 @@
 <!DOCTYPE html>
+<html lang="es">
+<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Administración — Plegados</title>
+  <title>Administración — TMI Plegados</title>
   <link rel="icon" href="favicon.jpg" type="image/jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="auth-body">
-  <button class="theme-toggle-float">☀️</button>
 
-  <div class="auth-wrapper">
-    <div class="auth-brand">
-      <img src="logo.png" alt="Lumon" style="height:64px;width:auto;filter:brightness(0) invert(1);margin-bottom:12px" />
-      <p style="color:var(--text-muted);font-size:13px;letter-spacing:.05em;text-transform:uppercase">Panel de administración</p>
+  <!-- Panel de marca -->
+  <div class="auth-left">
+    <div class="lgrid-glow"></div>
+    <img src="tmi-gecko.webp" alt="" class="auth-gecko" />
+    <img src="tmi-wordmark.webp" alt="TMI" class="wordmark-img" />
+    <div class="hero">
+      <div class="eyebrow-row"><span class="eyebar"></span><span class="ey">Panel de administración</span></div>
+      <h1 class="cond">Plegados<br><span>en control.</span></h1>
+      <p>Acceso de administración: pedidos de montadores y de almacén, gráficas, usuarios y estados en vivo.</p>
     </div>
+    <div class="claim ey">Diseño · Fabricación · Soluciones</div>
+  </div>
 
+  <!-- Formulario -->
+  <div class="auth-right">
     <div class="auth-card">
+      <div class="kh cond">Administración</div>
+      <div class="ks">Acceso restringido a administradores.</div>
+
       <!-- LOGIN -->
       <form id="adminLoginForm" class="auth-form active" novalidate>
         <div class="form-group">
@@ -33,6 +49,8 @@
         <div class="error-msg form-error" id="adminError"></div>
         <button type="submit" class="btn btn-primary btn-full" id="adminLoginBtn">Entrar</button>
       </form>
+
+      <div class="auth-foot ey">© 2026 TMI — Tenkai Global, S.L.</div>
     </div>
   </div>
 
