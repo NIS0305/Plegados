@@ -353,7 +353,7 @@ input.invalid, select.invalid, textarea.invalid { border-color: var(--danger); }
 }
 .lgrid-glow { position: absolute; left: -120px; bottom: -120px; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(closest-side, rgba(163,230,53,.10), transparent); }
 .auth-gecko { position: absolute; right: 56px; bottom: 96px; width: 250px; opacity: .14; pointer-events: none; }
-.auth-left .wordmark-img { height: 34px; display: block; position: relative; }
+.auth-left .wordmark-img { height: 34px; width: auto; align-self: flex-start; display: block; position: relative; }
 .hero { position: relative; }
 .eyebrow-row { display: flex; align-items: center; gap: 12px; }
 .eyebrow-row .eyebar { width: 30px; height: 3px; border-radius: 0; }
