@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Referencia — login.html</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing:border-box; }
+    body { margin:0; }
+    .scr { width:1440px; height:900px; display:flex; background:#111110; color:#F0EFE8;
+      font-family:'Barlow','Arial',sans-serif; overflow:hidden; }
+    .cond { font-family:'Barlow Condensed','Arial Narrow',sans-serif; }
+    .ey { font-family:'Inter',system-ui,sans-serif; text-transform:uppercase; letter-spacing:.18em; font-weight:600; }
+    a { color:#A3E635; } a:hover { color:#96E80E; }
+
+    /* left brand panel */
+    .left { flex:1.15; position:relative; padding:64px; display:flex; flex-direction:column; justify-content:space-between;
+      background:
+        linear-gradient(180deg, rgba(17,17,16,.2), rgba(17,17,16,.92)),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 46px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 46px),
+        #0d0d0c;
+      border-right:1px solid rgba(255,255,255,.07); }
+    .lgrid-glow { position:absolute; left:-120px; bottom:-120px; width:420px; height:420px; border-radius:50%;
+      background:radial-gradient(closest-side, rgba(163,230,53,.10), transparent); }
+    .wordmark { font-family:'Barlow Condensed'; font-weight:900; font-size:40px; letter-spacing:-.02em; line-height:1; }
+    .wordmark b { color:#A3E635; }
+    .eyebrow-row { display:flex; align-items:center; gap:12px; }
+    .eyebar { width:30px; height:3px; background:#A3E635; }
+    .hero { position:relative; }
+    .hero h1 { font-family:'Barlow Condensed'; font-weight:900; text-transform:uppercase; letter-spacing:-.01em;
+      font-size:92px; line-height:.86; margin:18px 0 0; }
+    .hero h1 span { color:#A3E635; }
+    .hero p { max-width:460px; color:#B7B7B6; font-size:16px; line-height:1.5; margin-top:22px; }
+    .claim { font-size:12px; color:#6B6B62; letter-spacing:.22em; }
+
+    /* right form */
+    .right { flex:1; display:flex; align-items:center; justify-content:center; padding:48px; }
+    .card { width:400px; }
+    .card .kh { font-family:'Barlow Condensed'; font-weight:800; font-size:34px; text-transform:uppercase; letter-spacing:.01em; }
+    .card .ks { color:#6B6B62; font-size:14px; margin-top:6px; }
+    .field { margin-top:22px; }
+    .field label { font-size:11px; letter-spacing:.14em; color:#8f8f88; text-transform:uppercase; font-weight:600; font-family:'Inter'; }
+    .input { margin-top:8px; height:50px; background:#1A1A18; border:1px solid rgba(255,255,255,.09); border-radius:10px;
+      display:flex; align-items:center; gap:11px; padding:0 15px; color:#cfcfc7; font-size:15px; }
+    .input svg { flex:none; }
+    .input .ph { color:#5f5f58; }
+    .btn { margin-top:28px; height:52px; background:#A3E635; color:#111110; border-radius:10px; display:flex;
+      align-items:center; justify-content:center; gap:9px; font-family:'Barlow Condensed'; font-weight:800; font-size:20px;
+      text-transform:uppercase; letter-spacing:.04em; box-shadow:0 8px 30px rgba(163,230,53,.18); }
+    .alt { margin-top:20px; text-align:center; font-size:13.5px; color:#6B6B62; }
+    .foot { margin-top:34px; text-align:center; font-size:11px; color:#4f4f49; letter-spacing:.12em; }
+    svg { display:block; }
+  </style>
+</head>
+<body>
+<div class="scr">
+  <!-- LEFT -->
+  <div class="left">
+    <div class="lgrid-glow"></div>
+    <img src="tmi-gecko.webp" alt="" style="position:absolute; right:56px; bottom:96px; width:250px; opacity:.14; pointer-events:none;" />
+    <img src="tmi-wordmark.webp" alt="TMI" style="height:34px;display:block" />
+    <div class="hero">
+      <div class="eyebrow-row"><span class="eyebar"></span><span class="ey" style="font-size:12px; color:#A3E635;">Gestión de pedidos · Taller</span></div>
+      <h1 class="cond">Plegados<br><span>en control.</span></h1>
+      <p>El taller y el almacén, en una sola pantalla. Los pedidos que entran, los que están en marcha y los que ya salen — sin perder ninguno.</p>
+    </div>
+    <div class="claim ey">Diseño · Fabricación · Soluciones</div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="card">
+      <div class="kh cond">Acceder</div>
+      <div class="ks">Entra con tu cuenta de TMI Plegados.</div>
+
+      <div class="field">
+        <label>Email</label>
+        <div class="input">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B6B62" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+          <span class="ph">tu@email.com</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Contraseña</label>
+        <div class="input">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B6B62" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <span style="let-spacing:3px; color:#cfcfc7; letter-spacing:3px;">••••••••</span>
+        </div>
+      </div>
+
+      <div class="btn cond">
+        Entrar
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#111110" stroke-width="2.5"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+      </div>
+
+      <div class="alt">¿No tienes cuenta? <a href="#">Crear una cuenta</a></div>
+      <div class="foot ey">© 2026 TMI — Tenkai Global, S.L.</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

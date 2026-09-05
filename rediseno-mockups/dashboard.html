@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Referencia — dashboard.html</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .app { width: 1440px; min-height: 1000px; background: #111110; color: #F0EFE8;
+      font-family: 'Barlow','Arial',sans-serif; -webkit-font-smoothing: antialiased; }
+    .cond { font-family: 'Barlow Condensed','Arial Narrow',sans-serif; }
+    .ey { font-family:'Inter',system-ui,sans-serif; text-transform:uppercase; letter-spacing:.16em; font-weight:600; }
+    a { color:#A3E635; } a:hover { color:#96E80E; }
+
+    /* top bar */
+    .topbar { height:66px; display:flex; align-items:center; justify-content:space-between;
+      padding:0 32px; border-bottom:1px solid rgba(255,255,255,.07); }
+    .brand { display:flex; align-items:center; gap:14px; }
+    .wordmark { font-family:'Barlow Condensed'; font-weight:900; font-size:30px; letter-spacing:-.02em;
+      color:#F0EFE8; line-height:1; }
+    .wordmark b { color:#A3E635; }
+    .divx { width:1px; height:26px; background:rgba(255,255,255,.12); }
+    .sect { font-size:11px; letter-spacing:.22em; color:#6B6B62; }
+    .tb-right { display:flex; align-items:center; gap:18px; }
+    .search { display:flex; align-items:center; gap:9px; background:#1A1A18; border:1px solid rgba(255,255,255,.08);
+      border-radius:9px; padding:9px 14px; width:280px; color:#6B6B62; font-size:13px; }
+    .user { display:flex; align-items:center; gap:10px; }
+    .avatar { width:36px; height:36px; border-radius:50%; background:#A3E635; color:#111110;
+      font-family:'Barlow Condensed'; font-weight:800; font-size:18px; display:flex; align-items:center; justify-content:center; }
+    .badge-role { font-size:10px; letter-spacing:.12em; color:#111110; background:#A3E635; padding:2px 8px; border-radius:5px; font-weight:700; }
+
+    /* page */
+    .page { padding:28px 32px 40px; }
+    .kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-bottom:28px; }
+    .kpi { background:#1A1A18; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:18px 20px; position:relative; overflow:hidden; }
+    .kpi .lab { font-size:11px; letter-spacing:.16em; color:#6B6B62; text-transform:uppercase; font-weight:600; }
+    .kpi .num { font-family:'Barlow Condensed'; font-weight:800; font-size:52px; line-height:.9; margin-top:8px; letter-spacing:-.01em; }
+    .kpi .sub { font-size:12px; color:#6E6E6D; margin-top:6px; }
+    .kpi.accent { border-color:rgba(163,230,53,.35); }
+    .kpi.accent .num { color:#A3E635; }
+    .kpi .glow { position:absolute; right:-30px; top:-30px; width:120px; height:120px; border-radius:50%;
+      background:radial-gradient(closest-side,rgba(163,230,53,.14),transparent); }
+
+    /* board */
+    .board { display:grid; grid-template-columns: 1.35fr 1fr; gap:24px; }
+    .col-head { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    .bar { width:4px; height:24px; background:#A3E635; border-radius:2px; }
+    .bar.dim { background:#3a3a35; }
+    .col-title { font-family:'Barlow Condensed'; font-weight:800; font-size:26px; letter-spacing:.01em; text-transform:uppercase; }
+    .count { font-size:13px; color:#6B6B62; font-weight:600; font-family:'Inter'; }
+    .stack { display:flex; flex-direction:column; gap:12px; }
+
+    .card { display:flex; align-items:stretch; gap:0; background:#1A1A18; border:1px solid rgba(255,255,255,.07);
+      border-radius:13px; overflow:hidden; }
+    .card .accentbar { width:4px; background:#A3E635; }
+    .card .accentbar.pend { background:#6E6E6D; }
+    .card .accentbar.done { background:#2D7C02; }
+    .card .body { flex:1; padding:15px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .c-l { display:flex; flex-direction:column; gap:5px; min-width:0; }
+    .c-ref { font-family:'Barlow Condensed'; font-weight:700; font-size:24px; line-height:1; letter-spacing:.005em; }
+    .c-meta { display:flex; align-items:center; gap:10px; font-size:12.5px; color:#8f8f88; }
+    .tag { font-size:10px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; padding:2px 7px; border-radius:5px; }
+    .tag.email { color:#A3E635; background:rgba(163,230,53,.12); }
+    .tag.mont { color:#B7B7B6; background:rgba(255,255,255,.06); }
+    .c-r { display:flex; align-items:center; gap:14px; }
+    .pill { font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; padding:5px 11px; border-radius:20px; white-space:nowrap; }
+    .pill.proc { color:#111110; background:#A3E635; }
+    .pill.pend { color:#B7B7B6; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.09); }
+    .pill.done { color:#A3E635; background:transparent; border:1px solid rgba(163,230,53,.3); }
+    .qty { font-size:12px; color:#6B6B62; font-family:'Inter'; }
+    .acts { display:flex; align-items:center; gap:7px; }
+    .ico { width:34px; height:34px; border-radius:8px; background:#111110; border:1px solid rgba(255,255,255,.08);
+      display:flex; align-items:center; justify-content:center; color:#B7B7B6; }
+    .ico.key { border-color:rgba(163,230,53,.35); color:#A3E635; }
+    .card.done { opacity:.9; }
+    .card.done .c-ref { color:#cfcfc7; }
+    .done-when { font-size:11.5px; color:#6E6E6D; display:flex; align-items:center; gap:6px; }
+    svg { display:block; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">
+      <img src="tmi-wordmark.webp" alt="TMI" style="height:24px;display:block" />
+      <div class="divx"></div>
+      <div class="sect ey">Plegados · Panel de taller</div>
+    </div>
+    <div class="tb-right">
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6B62" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span>Buscar por referencia, montador…</span>
+      </div>
+      <div class="user">
+        <span class="badge-role">Almacén</span>
+        <div class="avatar cond">M</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi accent">
+        <div class="glow"></div>
+        <div class="lab">Por hacer</div>
+        <div class="num">14</div>
+        <div class="sub">6 en proceso · 8 pendientes</div>
+      </div>
+      <div class="kpi">
+        <div class="lab">Finalizados hoy</div>
+        <div class="num">9</div>
+        <div class="sub">Última: hace 12 min</div>
+      </div>
+      <div class="kpi">
+        <div class="lab">Entran por email</div>
+        <div class="num">5</div>
+        <div class="sub">Automáticos vía n8n</div>
+      </div>
+      <div class="kpi">
+        <div class="lab">Total activo</div>
+        <div class="num">23</div>
+        <div class="sub">Semana en curso</div>
+      </div>
+    </div>
+
+    <!-- BOARD: Por hacer / Finalizados -->
+    <div class="board">
+      <!-- POR HACER -->
+      <div>
+        <div class="col-head">
+          <div class="bar"></div>
+          <div class="col-title">Por hacer</div>
+          <div class="count">14 pedidos</div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <div class="accentbar"></div>
+            <div class="body">
+              <div class="c-l">
+                <div class="c-ref cond">50999999</div>
+                <div class="c-meta"><span class="tag email">Email</span> mikelmmoreno98@gmail.com · Chapa</div>
+              </div>
+              <div class="c-r">
+                <span class="qty">1 pza</span>
+                <span class="pill proc">En proceso</span>
+                <div class="acts">
+                  <div class="ico" title="Plano"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg></div>
+                  <div class="ico key" title="Etiqueta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11V4h7l10 10-7 7z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="accentbar"></div>
+            <div class="body">
+              <div class="c-l">
+                <div class="c-ref cond">50902345</div>
+                <div class="c-meta"><span class="tag email">Email</span> mikelmmoreno98@gmail.com · Mixto</div>
+              </div>
+              <div class="c-r">
+                <span class="qty">3 pzas</span>
+                <span class="pill proc">En proceso</span>
+                <div class="acts">
+                  <div class="ico" title="Plano"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg></div>
+                  <div class="ico key" title="Etiqueta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11V4h7l10 10-7 7z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="accentbar pend"></div>
+            <div class="body">
+              <div class="c-l">
+                <div class="c-ref cond">50881204</div>
+                <div class="c-meta"><span class="tag mont">Montador</span> Juan García · RAL 7016</div>
+              </div>
+              <div class="c-r">
+                <span class="qty">2 pzas</span>
+                <span class="pill pend">Pendiente</span>
+                <div class="acts">
+                  <div class="ico" title="Plano"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg></div>
+                  <div class="ico key" title="Etiqueta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11V4h7l10 10-7 7z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="accentbar pend"></div>
+            <div class="body">
+              <div class="c-l">
+                <div class="c-ref cond">50877010</div>
+                <div class="c-meta"><span class="tag email">Email</span> pedidos@cliente.com · Chapa</div>
+              </div>
+              <div class="c-r">
+                <span class="qty">1 pza</span>
+                <span class="pill pend">Pendiente</span>
+                <div class="acts">
+                  <div class="ico" title="Plano"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg></div>
+                  <div class="ico key" title="Etiqueta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11V4h7l10 10-7 7z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="accentbar pend"></div>
+            <div class="body">
+              <div class="c-l">
+                <div class="c-ref cond">50861993</div>
+                <div class="c-meta"><span class="tag mont">Montador</span> Sergi Puig · RAL 9005</div>
+              </div>
+              <div class="c-r">
+                <span class="qty">4 pzas</span>
+                <span class="pill pend">Pendiente</span>
+                <div class="acts">
+                  <div class="ico" title="Plano"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg></div>
+                  <div class="ico key" title="Etiqueta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11V4h7l10 10-7 7z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FINALIZADOS -->
+      <div>
+        <div class="col-head">
+          <div class="bar dim"></div>
+          <div class="col-title">Finalizados</div>
+          <div class="count">9 hoy</div>
+        </div>
+        <div class="stack">
+          <div class="card done">
+            <div class="accentbar done"></div>
+            <div class="body">
+              <div class="c-l">
+                <div class="c-ref cond">50790112</div>
+                <div class="done-when"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2D7C02" stroke-width="3"><path d="m5 12 5 5 9-11"/></svg> Terminado · 14:02</div>
+              </div>
+              <div class="c-r">
+                <span class="pill done">Completado</span>
+                <div class="acts"><div class="ico" title="Etiqueta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11V4h7l10 10-7 7z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card done">
+            <div class="accentbar done"></div>
+            <div class="body">
+              <div class="c-l">
+                <div class="c-ref cond">50788440</div>
+                <div class="done-when"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2D7C02" stroke-width="3"><path d="m5 12 5 5 9-11"/></svg> Terminado · 13:47</div>
+              </div>
+              <div class="c-r">
+                <span class="pill done">Completado</span>
+                <div class="acts"><div class="ico" title="Etiqueta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11V4h7l10 10-7 7z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card done">
+            <div class="accentbar done"></div>
+            <div class="body">
+              <div class="c-l">
+                <div class="c-ref cond">50781067</div>
+                <div class="done-when"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2D7C02" stroke-width="3"><path d="m5 12 5 5 9-11"/></svg> Terminado · 12:20</div>
+              </div>
+              <div class="c-r">
+                <span class="pill done">Completado</span>
+                <div class="acts"><div class="ico" title="Etiqueta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11V4h7l10 10-7 7z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card done">
+            <div class="accentbar done"></div>
+            <div class="body">
+              <div class="c-l">
+                <div class="c-ref cond">50774881</div>
+                <div class="done-when"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2D7C02" stroke-width="3"><path d="m5 12 5 5 9-11"/></svg> Terminado · 11:05</div>
+              </div>
+              <div class="c-r">
+                <span class="pill done">Completado</span>
+                <div class="acts"><div class="ico" title="Etiqueta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11V4h7l10 10-7 7z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:6px; text-align:center;">
+            <span class="ey" style="font-size:11px; color:#6B6B62; cursor:pointer;">Ver historial completo →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

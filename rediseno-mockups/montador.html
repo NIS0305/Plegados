@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Referencia — montador.html</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing:border-box; }
+    body { margin:0; }
+    .app { width:1440px; min-height:980px; background:#111110; color:#F0EFE8; font-family:'Barlow','Arial',sans-serif; }
+    .cond { font-family:'Barlow Condensed','Arial Narrow',sans-serif; }
+    .ey { font-family:'Inter',system-ui,sans-serif; text-transform:uppercase; letter-spacing:.16em; font-weight:600; }
+    a { color:#A3E635; } a:hover { color:#96E80E; }
+
+    .topbar { height:66px; display:flex; align-items:center; justify-content:space-between; padding:0 32px; border-bottom:1px solid rgba(255,255,255,.07); }
+    .brand { display:flex; align-items:center; gap:14px; }
+    .wordmark { font-family:'Barlow Condensed'; font-weight:900; font-size:30px; letter-spacing:-.02em; line-height:1; }
+    .wordmark b { color:#A3E635; }
+    .divx { width:1px; height:26px; background:rgba(255,255,255,.12); }
+    .sect { font-size:11px; letter-spacing:.22em; color:#6B6B62; }
+    .user { display:flex; align-items:center; gap:10px; }
+    .avatar { width:36px; height:36px; border-radius:50%; background:#1A1A18; border:1px solid rgba(163,230,53,.35); color:#A3E635; font-family:'Barlow Condensed'; font-weight:800; font-size:17px; display:flex; align-items:center; justify-content:center; }
+    .badge-role { font-size:10px; letter-spacing:.12em; color:#B7B7B6; background:rgba(255,255,255,.06); padding:3px 8px; border-radius:5px; font-weight:700; }
+
+    .page { padding:28px 32px 44px; display:grid; grid-template-columns: 0.92fr 1.08fr; gap:26px; }
+    .panel { background:#1A1A18; border:1px solid rgba(255,255,255,.07); border-radius:16px; padding:26px 26px 28px; }
+    .ph-head { display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+    .eyebar { width:4px; height:24px; background:#A3E635; border-radius:2px; }
+    .eyebar.dim { background:#3a3a35; }
+    .ph-title { font-family:'Barlow Condensed'; font-weight:800; font-size:26px; text-transform:uppercase; }
+
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .field { margin-bottom:14px; }
+    .field label { font-size:11px; letter-spacing:.13em; color:#8f8f88; text-transform:uppercase; font-weight:600; font-family:'Inter'; }
+    .input { margin-top:7px; height:46px; background:#111110; border:1px solid rgba(255,255,255,.09); border-radius:9px; display:flex; align-items:center; padding:0 14px; color:#cfcfc7; font-size:14.5px; }
+    .input.readonly { color:#A3E635; border-color:rgba(163,230,53,.25); background:rgba(163,230,53,.05); }
+    .input .ph { color:#5f5f58; }
+    .drop { margin-top:7px; height:118px; border:1.5px dashed rgba(255,255,255,.14); border-radius:11px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; color:#6B6B62; background:#111110; }
+    .drop .du { font-family:'Inter'; font-size:13px; }
+    .drop b { color:#A3E635; }
+    .btn { margin-top:20px; height:52px; background:#A3E635; color:#111110; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:9px; font-family:'Barlow Condensed'; font-weight:800; font-size:20px; text-transform:uppercase; letter-spacing:.04em; box-shadow:0 8px 30px rgba(163,230,53,.16); }
+
+    /* mis pedidos */
+    .sub-head { display:flex; align-items:center; gap:10px; margin:2px 0 12px; }
+    .sub-head .t { font-family:'Barlow Condensed'; font-weight:700; font-size:19px; text-transform:uppercase; letter-spacing:.02em; }
+    .sub-head .c { font-size:12px; color:#6B6B62; font-weight:600; font-family:'Inter'; }
+    .mini { display:flex; align-items:center; justify-content:space-between; background:#111110; border:1px solid rgba(255,255,255,.07); border-radius:11px; padding:12px 15px; margin-bottom:10px; }
+    .mini .ml { display:flex; flex-direction:column; gap:4px; }
+    .mref { font-family:'Barlow Condensed'; font-weight:700; font-size:20px; line-height:1; }
+    .mmeta { font-size:12px; color:#8f8f88; }
+    .pill { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; padding:5px 10px; border-radius:20px; }
+    .pill.proc { color:#111110; background:#A3E635; }
+    .pill.pend { color:#B7B7B6; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.09); }
+    .pill.done { color:#A3E635; border:1px solid rgba(163,230,53,.3); }
+    .steps { display:flex; align-items:center; gap:6px; margin-top:16px; }
+    .dot { width:9px; height:9px; border-radius:50%; background:#3a3a35; }
+    .dot.on { background:#A3E635; }
+    .line { flex:1; height:2px; background:#26261f; }
+    .line.on { background:#A3E635; }
+    svg { display:block; }
+    .divider { height:1px; background:rgba(255,255,255,.06); margin:22px 0; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <img src="tmi-wordmark.webp" alt="TMI" style="height:24px;display:block" />
+      <div class="divx"></div>
+      <div class="sect ey">Plegados · Montador</div>
+    </div>
+    <div class="user">
+      <span class="badge-role">Montador</span>
+      <div class="avatar cond">J</div>
+    </div>
+  </div>
+
+  <div class="page">
+    <!-- NUEVO PEDIDO -->
+    <div class="panel">
+      <div class="ph-head"><div class="eyebar"></div><div class="ph-title cond">Nuevo pedido</div></div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Montador</label>
+          <div class="input readonly">Juan García</div>
+        </div>
+        <div class="field">
+          <label>Cantidad</label>
+          <div class="input"><span class="ph">Nº de piezas</span></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Nº de referencia</label>
+          <div class="input"><span class="ph">Ej. 50999999</span></div>
+        </div>
+        <div class="field">
+          <label>Color RAL</label>
+          <div class="input"><span class="ph">Ej. 7016</span></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Notas para el taller</label>
+        <div class="input" style="height:64px; align-items:flex-start; padding-top:12px;"><span class="ph">Chapa / cristal / mixto, detalles…</span></div>
+      </div>
+
+      <div class="field">
+        <label>Plano o dibujo</label>
+        <div class="drop">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="1.8"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>
+          <div class="du">Arrastra el archivo o <b>búscalo</b></div>
+          <div class="du" style="color:#4f4f49; font-size:11px;">PDF, JPG o PNG · máx. 10 MB</div>
+        </div>
+      </div>
+
+      <div class="btn cond">
+        Enviar pedido
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#111110" stroke-width="2.5"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <!-- MIS PEDIDOS -->
+    <div class="panel">
+      <div class="ph-head"><div class="eyebar"></div><div class="ph-title cond">Mis pedidos</div></div>
+
+      <div class="sub-head"><span class="t cond">Por hacer</span><span class="c">3</span></div>
+
+      <div class="mini">
+        <div class="ml">
+          <div class="mref cond">50861993</div>
+          <div class="mmeta">4 pzas · RAL 9005</div>
+        </div>
+        <span class="pill proc">En proceso</span>
+      </div>
+      <div class="mini">
+        <div class="ml">
+          <div class="mref cond">50859110</div>
+          <div class="mmeta">2 pzas · RAL 7016</div>
+        </div>
+        <span class="pill pend">Pendiente</span>
+      </div>
+      <div class="mini">
+        <div class="ml">
+          <div class="mref cond">50855402</div>
+          <div class="mmeta">1 pza · Chapa</div>
+        </div>
+        <span class="pill pend">Pendiente</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sub-head"><span class="t cond" style="color:#B7B7B6;">Finalizados</span><span class="c">esta semana · 7</span></div>
+
+      <div class="mini">
+        <div class="ml">
+          <div class="mref cond" style="color:#cfcfc7;">50790112</div>
+          <div class="mmeta"><span style="color:#2D7C02;">✓</span> Entregado · lun 14:02</div>
+        </div>
+        <span class="pill done">Completado</span>
+      </div>
+      <div class="mini">
+        <div class="ml">
+          <div class="mref cond" style="color:#cfcfc7;">50781067</div>
+          <div class="mmeta"><span style="color:#2D7C02;">✓</span> Entregado · lun 12:20</div>
+        </div>
+        <span class="pill done">Completado</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Referencia — detalle.html</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing:border-box; }
+    body { margin:0; }
+    .back { width:1280px; height:900px; background:radial-gradient(1200px 600px at 60% 0%, #16160f, #0c0c0b);
+      display:flex; align-items:center; justify-content:center; font-family:'Barlow','Arial',sans-serif; color:#F0EFE8; }
+    .cond { font-family:'Barlow Condensed','Arial Narrow',sans-serif; }
+    .ey { font-family:'Inter',system-ui,sans-serif; text-transform:uppercase; letter-spacing:.15em; font-weight:600; }
+    a { color:#A3E635; } a:hover { color:#96E80E; }
+
+    .modal { width:940px; background:#161614; border:1px solid rgba(255,255,255,.09); border-radius:18px;
+      box-shadow:0 40px 120px rgba(0,0,0,.6); overflow:hidden; }
+    .mhead { display:flex; align-items:center; justify-content:space-between; padding:22px 26px; border-bottom:1px solid rgba(255,255,255,.07); }
+    .mtitle { display:flex; align-items:center; gap:12px; }
+    .mtitle .h { font-family:'Barlow Condensed'; font-weight:800; font-size:30px; text-transform:uppercase; letter-spacing:.005em; }
+    .tag { font-size:10px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; padding:3px 8px; border-radius:5px; color:#A3E635; background:rgba(163,230,53,.12); }
+    .x { width:34px; height:34px; border-radius:8px; border:1px solid rgba(255,255,255,.09); display:flex; align-items:center; justify-content:center; color:#8f8f88; }
+
+    .mbody { display:grid; grid-template-columns: 1fr 1fr; }
+    .plano { padding:22px; border-right:1px solid rgba(255,255,255,.07); }
+    .plano .lab { font-size:11px; letter-spacing:.15em; color:#6B6B62; text-transform:uppercase; font-weight:600; margin-bottom:10px; }
+    .sheet { background:#0d0d0c; border:1px solid rgba(255,255,255,.08); border-radius:10px; height:360px; position:relative; overflow:hidden;
+      background-image:repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, transparent 1px 28px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 1px, transparent 1px 28px); }
+
+    .detail { padding:22px 24px; }
+    .row { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .row .k { font-size:11px; letter-spacing:.13em; color:#7f7f77; text-transform:uppercase; font-weight:600; font-family:'Inter'; }
+    .row .v { font-size:15px; color:#e7e7df; font-weight:500; }
+    .selest { display:flex; align-items:center; gap:8px; background:#111110; border:1px solid rgba(163,230,53,.3); color:#A3E635;
+      padding:7px 12px; border-radius:8px; font-size:13px; font-weight:600; }
+    .note { margin-top:14px; background:rgba(163,230,53,.06); border-left:3px solid #A3E635; border-radius:0 8px 8px 0; padding:11px 14px; }
+    .note .nl { font-size:10px; letter-spacing:.14em; color:#A3E635; text-transform:uppercase; font-weight:700; }
+    .note .nt { font-size:14px; color:#d9d9d1; margin-top:3px; }
+
+    .docs { margin-top:18px; display:flex; flex-direction:column; gap:10px; }
+    .doc { display:flex; align-items:center; justify-content:space-between; background:#111110; border:1px solid rgba(255,255,255,.08); border-radius:11px; padding:13px 15px; }
+    .doc .dl { display:flex; align-items:center; gap:11px; }
+    .doc .di { width:38px; height:38px; border-radius:9px; background:rgba(255,255,255,.05); display:flex; align-items:center; justify-content:center; color:#B7B7B6; }
+    .doc .dt { font-family:'Barlow Condensed'; font-weight:700; font-size:17px; text-transform:uppercase; }
+    .doc .ds { font-size:12px; color:#6B6B62; }
+    .obtn { display:flex; align-items:center; gap:7px; border:1px solid rgba(255,255,255,.12); color:#e7e7df; border-radius:8px; padding:8px 13px; font-size:13px; font-weight:600; }
+    .gbtn { display:flex; align-items:center; gap:8px; background:#A3E635; color:#111110; border-radius:8px; padding:9px 15px;
+      font-family:'Barlow Condensed'; font-weight:800; font-size:16px; text-transform:uppercase; letter-spacing:.03em; }
+    .di.key { color:#A3E635; background:rgba(163,230,53,.1); }
+
+    .stepper { display:flex; align-items:center; gap:0; margin:20px 22px 24px; }
+    .step { display:flex; flex-direction:column; align-items:center; gap:7px; width:70px; }
+    .sc { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed'; font-weight:800; font-size:15px; }
+    .sc.done { background:#2D7C02; color:#F0EFE8; }
+    .sc.act { background:#A3E635; color:#111110; box-shadow:0 0 0 5px rgba(163,230,53,.15); }
+    .sc.todo { background:#1A1A18; border:1px solid rgba(255,255,255,.12); color:#6B6B62; }
+    .sl { font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:#8f8f88; text-align:center; font-family:'Inter'; }
+    .sl.act { color:#A3E635; }
+    .seg { flex:1; height:2px; background:#26261f; margin-top:-24px; }
+    .seg.on { background:#2D7C02; }
+    svg { display:block; }
+  </style>
+</head>
+<body>
+<div class="back">
+  <div class="modal">
+    <div class="mhead">
+      <div class="mtitle">
+        <div class="h cond">Pedido 50999999</div>
+        <span class="tag">Email</span>
+      </div>
+      <div class="x"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></div>
+    </div>
+
+    <div class="mbody">
+      <!-- plano -->
+      <div class="plano">
+        <div class="lab">Plano adjunto</div>
+        <div class="sheet">
+          <svg width="100%" height="100%" viewBox="0 0 380 360" fill="none" preserveAspectRatio="xMidYMid meet">
+            <rect x="70" y="90" width="240" height="150" stroke="#A3E635" stroke-width="1.6"/>
+            <path d="M70 130 H310 M70 200 H310" stroke="rgba(163,230,53,.4)" stroke-width="1" stroke-dasharray="4 4"/>
+            <path d="M310 90 l24 -18 M310 240 l24 -18 M334 72 v150" stroke="#6E6E6D" stroke-width="1"/>
+            <path d="M70 262 H310" stroke="#6E6E6D" stroke-width="1"/>
+            <path d="M70 258 v8 M310 258 v8" stroke="#6E6E6D" stroke-width="1"/>
+            <text x="190" y="278" fill="#8f8f88" font-size="11" text-anchor="middle" font-family="Inter">1200 mm</text>
+            <text x="190" y="330" fill="#5f5f58" font-size="10" text-anchor="middle" font-family="Inter" letter-spacing="2">CHAPA · PLEGADO EN U</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- detail -->
+      <div class="detail">
+        <div class="row"><span class="k">Solicitante</span><span class="v">Almacén · Email</span></div>
+        <div class="row"><span class="k">Fecha</span><span class="v">05/09/2026, 02:39</span></div>
+        <div class="row">
+          <span class="k">Estado</span>
+          <span class="selest cond">En proceso <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"/></svg></span>
+        </div>
+        <div class="row"><span class="k">Cantidad</span><span class="v">1 pieza</span></div>
+        <div class="row"><span class="k">Referencia</span><span class="v">50999999</span></div>
+
+        <div class="note">
+          <div class="nl">Nota del taller</div>
+          <div class="nt">Pieza urgente para montaje del jueves.</div>
+        </div>
+
+        <div class="docs">
+          <div class="doc">
+            <div class="dl">
+              <div class="di"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg></div>
+              <div><div class="dt cond">Plano (PDF)</div><div class="ds">50999999.pdf</div></div>
+            </div>
+            <div class="obtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><rect x="6" y="13" width="12" height="8"/><path d="M4 9h16v7H4z"/></svg> Abrir / Imprimir</div>
+          </div>
+
+          <div class="doc">
+            <div class="dl">
+              <div class="di key"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11V4h7l10 10-7 7z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+              <div><div class="dt cond">Etiqueta</div><div class="ds">Aún no generada</div></div>
+            </div>
+            <div class="gbtn cond"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111110" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Generar etiqueta</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- stepper -->
+    <div class="stepper">
+      <div class="step"><div class="sc done">✓</div><div class="sl">Pendiente</div></div>
+      <div class="seg on"></div>
+      <div class="step"><div class="sc act">2</div><div class="sl act">En proceso</div></div>
+      <div class="seg"></div>
+      <div class="step"><div class="sc todo">3</div><div class="sl">Completado</div></div>
+      <div class="seg"></div>
+      <div class="step"><div class="sc todo">4</div><div class="sl">En taller</div></div>
+      <div class="seg"></div>
+      <div class="step"><div class="sc todo">5</div><div class="sl">Entregado</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
