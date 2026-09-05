@@ -41,7 +41,7 @@
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
   <script>
-    getSessionUser().then(u => { if (u && u.role === 'admin') window.location.href = 'dashboard.html'; });
+    getSessionUser().then(u => { if (u && ['admin','almacen'].includes(u.role)) window.location.href = 'dashboard.html'; });
 
     // Toggle password visibility
     document.querySelectorAll('.toggle-pass').forEach(btn => {

@@ -33,6 +33,16 @@ async function requireAdmin() {
   return u;
 }
 
+// Personal del panel: admin y almacén entran al mismo dashboard y ven todo.
+// El almacén se trata como admin PARA EL DASHBOARD. No sustituye a
+// requireAdmin(), que sigue siendo solo-admin para las páginas que la usan.
+async function requireStaff() {
+  const u = await requireAuth();
+  if (!u) return null;
+  if (!['admin', 'almacen'].includes(u.role)) { window.location.href = 'index.html'; return null; }
+  return u;
+}
+
 async function loginUser(email, password) {
   const { error } = await _db.auth.signInWithPassword({
     email: email.trim().toLowerCase(),

@@ -1,5 +1,5 @@
 // ─── Nav + arranque ───────────────────────────────────────────────────────────
-// La autenticación (requireAdmin) es ASÍNCRONA. El arranque real —render de la
+// La autenticación (requireStaff: admin o almacén) es ASÍNCRONA. El arranque real —render de la
 // barra superior, carga de datos e init de gráficas— vive en la IIFE async del
 // final del fichero. Aquí arriba solo quedan definiciones y listeners, que se
 // pueden enganchar antes de resolver la sesión sin efecto hasta que el usuario
@@ -565,14 +565,14 @@ document.getElementById('ordersTable').addEventListener('click', e => {
 
 // ─── Arranque (auth async) + Realtime ─────────────────────────────────────────
 (async () => {
-  const u = await requireAdmin();
-  if (!u) return;   // requireAdmin ya redirige si no hay sesión o no es admin
+  const u = await requireStaff();
+  if (!u) return;   // requireStaff ya redirige si no hay sesión o no es admin/almacén
 
   const area = document.getElementById('navUserArea');
   area.innerHTML = `
     <span class="nav-avatar">${u.nombre.charAt(0).toUpperCase()}</span>
     <span class="nav-username">${escHtml(u.nombre)}</span>
-    <span class="badge badge-blue" style="font-size:11px">Admin</span>
+    ${u.role === 'almacen' ? '<span class="badge badge-teal" style="font-size:11px">Almacén</span>' : '<span class="badge badge-blue" style="font-size:11px">Admin</span>'}
     <button class="btn btn-secondary btn-sm" id="logoutBtn">Salir</button>`;
   document.getElementById('logoutBtn').addEventListener('click', logout);
 

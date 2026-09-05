@@ -167,7 +167,7 @@ if (form) (async () => {
   document.getElementById('navUsername').textContent = currentUser.nombre;
   document.getElementById('navAvatar').textContent   = currentUser.nombre.charAt(0).toUpperCase();
   document.getElementById('logoutBtn').addEventListener('click', logout);
-  if (currentUser.role !== 'admin') {
+  if (!['admin','almacen'].includes(currentUser.role)) {
     const dashLink = document.querySelector('a[href="dashboard.html"]');
     if (dashLink) dashLink.style.display = 'none';
   }

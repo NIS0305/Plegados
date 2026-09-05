@@ -48,7 +48,7 @@
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
   <script>
-    getSessionUser().then(u => { if (u) window.location.href = u.role === 'admin' ? 'dashboard.html' : 'index.html'; });
+    getSessionUser().then(u => { if (u) window.location.href = ['admin','almacen'].includes(u.role) ? 'dashboard.html' : 'index.html'; });
 
     document.querySelectorAll('.toggle-pass').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -82,7 +82,7 @@
           btn.disabled = false; btn.textContent = 'Entrar';
           return;
         }
-        window.location.href = 'index.html';
+        window.location.href = 'dashboard.html';
       } catch (err) {
         errEl.textContent = err.message;
         btn.disabled = false; btn.textContent = 'Entrar';
