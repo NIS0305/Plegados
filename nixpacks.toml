@@ -1,0 +1,62 @@
+# Configuración de build para Coolify / Nixpacks (provider "staticfile" -> nginx).
+#
+# POR QUÉ EXISTE ESTE FICHERO
+# El nginx.conf que genera nixpacks no envía la cabecera Cache-Control (solo
+# ETag y Last-Modified). Sin ella, los navegadores aplican caché heurística y
+# siguen sirviendo versiones viejas de app.js, auth.js, supabase.js, etc. tras
+# cada deploy: login roto (el auth.js antiguo consultaba una tabla que ya no
+# existe) y funciones nuevas que no aparecen hasta forzar una recarga.
+#
+# MECANISMO
+# nixpacks escribe el asset "nginx.conf" en /assets/nginx.conf y su comando de
+# arranque hace `sed` del puerto sobre ese fichero y lanza `nginx -c` con él.
+# Los [staticAssets] de este nixpacks.toml se fusionan ENCIMA de los del
+# provider (orden de fusión: provider < procfile < fichero/env/cli), así que esta
+# versión SUSTITUYE a la generada. Es una copia fiel de la plantilla del
+# provider con UNA directiva añadida: `add_header Cache-Control "no-cache";`.
+#
+# no-cache NO desactiva la caché: obliga al navegador a REVALIDAR siempre con el
+# servidor (If-None-Match / ETag). Si el fichero no ha cambiado responde 304 sin
+# cuerpo (coste casi nulo); si ha cambiado, baja la versión nueva. Así cada
+# deploy llega a todos sin que nadie tenga que forzar recarga.
+#
+# NO TOCAR
+#  - `listen 0.0.0.0:80;` debe quedar LITERAL: el start de nixpacks lo cambia
+#    por $PORT con sed en runtime. Si se altera, nginx no escucha donde Coolify
+#    espera y el deploy queda caído.
+#  - El `include` de mime.types con el glob de /nix/store es la ruta real dentro
+#    de la imagen; sin él, los .js/.css se servirían como octet-stream.
+#  - `root /app;` es donde nixpacks copia el repositorio (los .html están en la
+#    raíz del repo; equivale al `root /app/{root}` con root vacío del provider).
+
+[staticAssets]
+"nginx.conf" = '''
+daemon off;
+error_log /dev/stdout info;
+worker_processes auto;
+events {
+    worker_connections 1024;
+}
+http {
+    include /nix/store/*-user-environment/conf/mime.types;
+    access_log /dev/stdout;
+    default_type application/octet-stream;
+    sendfile on;
+    keepalive_timeout 60;
+    types_hash_max_size 4096;
+    server {
+        listen 0.0.0.0:80;
+        gzip on;
+        root /app;
+
+        # Revalidar siempre. Con el ETag que nginx ya emite, las revalidaciones
+        # devuelven 304 cuando no hay cambios. Se hereda en location / porque
+        # allí no se define ningún add_header propio.
+        add_header Cache-Control "no-cache";
+
+        location / {
+            autoindex off;
+        }
+    }
+}
+'''
