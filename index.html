@@ -2,8 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nuevo pedido — TMI Plegados</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111110" />
+  <title>Plegados — TMI</title>
   <link rel="icon" href="favicon.jpg" type="image/jpeg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,126 +13,199 @@
   <style>html{background:#111110}body{visibility:hidden}</style>
   <script>setTimeout(function(){try{document.body.style.visibility='visible'}catch(e){}},6000)</script>
 </head>
-<body>
-  <!-- Barra superior -->
-  <nav class="topbar navbar">
-    <div class="brand">
-      <img src="tmi-wordmark.webp" alt="TMI" class="wordmark-img" />
-      <div class="divx"></div>
-      <div class="sect ey">Plegados · Montador</div>
-      <div class="nav-links">
-        <a href="index.html" class="nav-link active">Nuevo pedido</a>
-        <a href="dashboard.html" class="nav-link">Dashboard</a>
-      </div>
-    </div>
-    <div class="nav-user">
-      <span class="badge-role">Montador</span>
-      <span class="nav-username" id="navUsername"></span>
-      <span class="nav-avatar cond" id="navAvatar"></span>
-      <button class="btn btn-secondary btn-sm" id="logoutBtn">Salir</button>
-    </div>
-  </nav>
+<body class="m-body">
+  <!-- App del montador: una sola página con vistas por hash (#inicio, #nuevo,
+       #enviado, #pedidos, #pedido/<id>, #chats, #chat/<pedidoId>). app.js la
+       enruta. Maqueta: rediseno-mockups/maqueta-movil-montador.html -->
+  <div class="m-app" id="mApp">
 
-  <main class="page two">
+    <!-- 1 · INICIO -->
+    <section class="mv" id="v-inicio" hidden>
+      <header class="m-top">
+        <img src="tmi-wordmark.webp" alt="TMI" class="m-wordmark" />
+        <div class="m-user">
+          <a href="dashboard.html" class="m-iconbtn" id="mDashLink" hidden aria-label="Panel de taller" title="Panel de taller">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B7B7B6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
+          </a>
+          <span class="m-who">
+            <span class="m-name" id="mNombre"></span>
+            <span class="m-role" id="mRol">MONTADOR</span>
+          </span>
+          <span class="m-avatar" id="mIniciales"></span>
+          <button type="button" class="m-iconbtn" id="logoutBtn" aria-label="Cerrar sesión" title="Cerrar sesión">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B7B7B6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5"/><path d="M15 12H4"/></svg>
+          </button>
+        </div>
+      </header>
 
-    <!-- NUEVO PEDIDO -->
-    <section class="panel">
-      <div class="ph-head"><div class="eyebar"></div><h2 class="ph-title cond">Nuevo pedido</h2></div>
-
-      <form id="pedidoForm" novalidate>
-
-        <div class="two-col">
-          <div class="form-group">
-            <label>Montador</label>
-            <div class="input-readonly" id="montador"></div>
-            <input type="hidden" id="montadorHidden" />
-          </div>
-          <div class="form-group">
-            <label for="cantidad">Cantidad de piezas *</label>
-            <input type="number" id="cantidad" placeholder="Nº de piezas" min="1" value="1" required />
-            <span class="error-msg" id="err-cantidad"></span>
-          </div>
+      <main class="m-main m-inicio">
+        <div class="m-hello">
+          <span class="m-eyebrow"><span class="m-eyeline"></span>PANEL DEL MONTADOR</span>
+          <h1 class="m-h1" id="mSaludo">HOLA</h1>
+          <span class="m-fecha" id="mFecha"></span>
         </div>
 
-        <div class="two-col">
-          <div class="form-group">
-            <label for="referencia">Nº de referencia</label>
-            <input type="text" id="referencia" placeholder="Ej. 50999999" />
-          </div>
-          <div class="form-group">
-            <label for="ral">Color RAL</label>
-            <input type="text" id="ral" placeholder="Ej. RAL 7016" />
-          </div>
-        </div>
+        <a href="#nuevo" class="m-cta">
+          <span class="m-cta-ico">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </span>
+          <span class="m-cta-txt">
+            <span class="m-cta-t">NUEVO PEDIDO</span>
+            <span class="m-cta-s">Planos, piezas y color · hasta 5 fotos</span>
+          </span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111110" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </a>
 
-        <div class="form-group">
-          <label for="cristalFijo">Cristal fijo *</label>
-          <input type="number" id="cristalFijo" placeholder="0" min="0" value="0" required />
-          <span class="error-msg" id="err-cristalFijo"></span>
-        </div>
-
-        <div class="form-group">
-          <label for="notas">Notas para el taller</label>
-          <textarea id="notas" rows="3" placeholder="Chapa / cristal / mixto, tolerancias, acabado…"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>Plano o dibujo</label>
-          <div class="upload-area" id="uploadArea">
-            <input type="file" id="dibujo" accept="image/*,.pdf" hidden />
-            <div class="upload-content" id="uploadContent">
-              <span class="upload-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="1.8" style="margin:0 auto"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>
+        <div class="m-group">
+          <span class="m-label">MIS PEDIDOS</span>
+          <div class="m-grid2">
+            <a href="#pedidos/curso" class="m-stat">
+              <span class="m-stat-top">
+                <span class="m-stat-ico">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F0EFE8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
               </span>
-              <p>Arrastra el archivo o <button type="button" class="link-btn" id="browseBtn">búscalo</button></p>
-              <p class="upload-hint">PDF, JPG o PNG · máx. 10 MB</p>
+              <span class="m-stat-bot">
+                <span class="m-stat-n" id="mCntCurso">–</span>
+                <span class="m-stat-l">En curso</span>
+              </span>
+            </a>
+            <a href="#pedidos/terminados" class="m-stat">
+              <span class="m-stat-top">
+                <span class="m-stat-ico ok">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+              </span>
+              <span class="m-stat-bot">
+                <span class="m-stat-n" id="mCntTerm">–</span>
+                <span class="m-stat-l">Terminados</span>
+              </span>
+            </a>
+          </div>
+
+          <a href="#chats" class="m-row-card">
+            <span class="m-stat-ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F0EFE8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a7.5 7.5 0 0 1-11 6.6L4 20l1.4-4.6A7.5 7.5 0 1 1 20 12z"/></svg>
+            </span>
+            <span class="m-row-txt">
+              <span class="m-row-t">Chats con taller</span>
+              <span class="m-row-s" id="mChatsSub">Sin chats abiertos</span>
+            </span>
+            <span class="m-badge" id="mChatsBadge" hidden>0</span>
+          </a>
+        </div>
+
+        <span class="m-foot">TMI SYSTEM · PLEGADOS</span>
+      </main>
+    </section>
+
+    <!-- 2 · NUEVO PEDIDO -->
+    <section class="mv" id="v-nuevo" hidden>
+      <header class="m-bar">
+        <button type="button" class="m-back" data-up="inicio" aria-label="Volver al inicio">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F0EFE8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <h1 class="m-bar-t">NUEVO PEDIDO</h1>
+        <span class="m-namechip" id="mMontadorChip"></span>
+      </header>
+
+      <form id="pedidoForm" class="m-form" novalidate>
+        <main class="m-main m-nuevo">
+          <section class="m-planos">
+            <span class="m-planos-head">
+              <span class="m-label">PLANOS Y FOTOS</span>
+              <span class="m-planos-n" id="mPlanosCount">0 / 5</span>
+            </span>
+            <div class="m-slots" id="mSlots"></div>
+            <span class="m-hint">Hasta 5 fotos o PDF por pedido, por si el plano no cabe en una.</span>
+            <input type="file" id="mFileMulti" accept="image/*,.pdf" multiple hidden />
+            <input type="file" id="mFileCam" accept="image/*" capture="environment" hidden />
+          </section>
+
+          <div class="m-grid2">
+            <div class="m-step">
+              <label class="m-label" for="cantidad">PIEZAS *</label>
+              <div class="m-step-row">
+                <button type="button" class="m-step-btn" data-step="cantidad" data-d="-1" aria-label="Quitar una pieza">−</button>
+                <input type="number" id="cantidad" class="m-step-n" inputmode="numeric" min="1" step="1" value="1" required />
+                <button type="button" class="m-step-btn plus" data-step="cantidad" data-d="1" aria-label="Añadir una pieza">+</button>
+              </div>
             </div>
-            <div class="file-preview" id="filePreview" style="display:none">
-              <img id="previewImg" src="" alt="Vista previa" />
-              <div class="file-info">
-                <span id="fileName"></span>
-                <button type="button" class="remove-btn" id="removeFile">✕ Quitar</button>
+            <div class="m-step">
+              <label class="m-label" for="cristalFijo">CRISTAL FIJO *</label>
+              <div class="m-step-row">
+                <button type="button" class="m-step-btn" data-step="cristalFijo" data-d="-1" aria-label="Quitar un cristal">−</button>
+                <input type="number" id="cristalFijo" class="m-step-n" inputmode="numeric" min="0" step="1" value="0" required />
+                <button type="button" class="m-step-btn plus" data-step="cristalFijo" data-d="1" aria-label="Añadir un cristal">+</button>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Enviar pedido</button>
-          <button type="reset" class="btn btn-secondary" id="resetBtn">Limpiar</button>
-        </div>
+          <div class="m-grid2">
+            <div class="m-field">
+              <label class="m-label" for="referencia">Nº REFERENCIA</label>
+              <input type="text" id="referencia" class="m-input" inputmode="numeric" autocomplete="off" placeholder="50999999" />
+            </div>
+            <div class="m-field">
+              <label class="m-label" for="ral">COLOR RAL</label>
+              <input type="text" id="ral" class="m-input" autocomplete="off" placeholder="RAL 7016" />
+            </div>
+          </div>
 
+          <div class="m-field">
+            <label class="m-label" for="notas">NOTAS PARA EL TALLER</label>
+            <textarea id="notas" class="m-input m-textarea" rows="2" placeholder="Opcional: chapa, cristal, acabado…"></textarea>
+          </div>
+        </main>
+
+        <footer class="m-fixfoot">
+          <button type="submit" class="m-btn-main" id="mEnviar">
+            <span id="mEnviarTxt">ENVIAR PEDIDO</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111110" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </footer>
       </form>
-    </section>
 
-    <!-- MIS PEDIDOS -->
-    <section class="panel">
-      <div class="ph-head">
-        <div class="eyebar"></div>
-        <h2 class="ph-title cond">Mis pedidos</h2>
-        <span class="count-badge" id="myCount">0</span>
-        <div class="section-actions">
-          <select id="myFilterEstado" class="filter-select" style="width:auto;height:36px">
-            <option value="">Todos los estados</option>
-            <option value="Pendiente">Pendiente</option>
-            <option value="Completado">Completado</option>
-          </select>
+      <!-- Añadir plano: cámara o galería/PDF -->
+      <div class="m-sheet-overlay" id="mAddSheet" hidden>
+        <div class="m-sheet" role="dialog" aria-label="Añadir plano">
+          <button type="button" class="m-sheet-btn" id="mAddCam">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F0EFE8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg>
+            Hacer foto
+          </button>
+          <button type="button" class="m-sheet-btn" id="mAddFiles">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F0EFE8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>
+            Elegir fotos o PDF
+          </button>
+          <button type="button" class="m-sheet-btn cancel" id="mAddCancel">Cancelar</button>
         </div>
       </div>
-
-      <div id="misPedidosList" class="pedidos-list"></div>
     </section>
-  </main>
 
-  <!-- Modal detalle -->
-  <div class="modal-overlay" id="modalOverlay" style="display:none">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="modalTitle" class="cond">Detalle del pedido</h2>
-        <button class="modal-close" id="modalClose" aria-label="Cerrar">✕</button>
-      </div>
-      <div class="modal-body" id="modalBody"></div>
-    </div>
+    <!-- 3 · PEDIDO ENVIADO -->
+    <section class="mv" id="v-enviado" hidden></section>
+
+    <!-- 4 · MIS PEDIDOS -->
+    <section class="mv" id="v-pedidos" hidden></section>
+
+    <!-- 5 · DETALLE DEL PEDIDO -->
+    <section class="mv" id="v-pedido" hidden></section>
+
+    <!-- 6 · CHATS CON TALLER -->
+    <section class="mv" id="v-chats" hidden></section>
+
+    <!-- 7 · CHAT DEL PEDIDO (el esqueleto lo pinta app.js; los mensajes van en #mMsgs) -->
+    <section class="mv" id="v-chat" hidden></section>
+  </div>
+
+  <!-- Visor a pantalla completa (planos e imágenes del chat) -->
+  <div class="m-viewer" id="mViewer" hidden>
+    <button type="button" class="m-viewer-x" id="mViewerClose" aria-label="Cerrar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0EFE8" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <img id="mViewerImg" alt="Imagen a pantalla completa" />
   </div>
 
   <div class="toast" id="toast"></div>

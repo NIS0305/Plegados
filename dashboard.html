@@ -23,6 +23,7 @@
         <a href="index.html" class="nav-link">Nuevo pedido</a>
         <a href="dashboard.html" class="nav-link active">Dashboard</a>
         <a href="#historial" class="nav-link">Historial</a>
+        <a href="#chats" class="nav-link">Chats<span class="nav-badge" id="navChatsBadge" hidden>0</span></a>
       </div>
     </div>
     <!-- dashboard.js rellena aquí avatar, nombre, rol y el botón Salir -->
@@ -88,6 +89,19 @@
         </div>
       </section>
     </div>
+
+    <!-- CHATS CON MONTADORES (un chat por pedido). Solo el taller los cierra. -->
+    <section class="tchats" id="chats">
+      <div class="col-head">
+        <div class="bar"></div>
+        <h2 class="col-title cond">Chats</h2>
+        <span class="count" id="tChatsCount"></span>
+      </div>
+      <div class="tchats-box">
+        <aside class="tchats-list" id="tChatsList"><div class="tchats-empty">Cargando…</div></aside>
+        <section class="tchat-pane" id="tChatPane"><div class="tchat-nada">Elige un chat de la lista.</div></section>
+      </div>
+    </section>
 
     <!-- MONTADORES -->
     <div class="col-head">
@@ -314,6 +328,9 @@
       <div class="modal-body" id="modalBody"></div>
     </div>
   </div>
+
+  <!-- Visor de imágenes del chat -->
+  <div class="t-visor" id="tVisor" hidden><img id="tVisorImg" alt="Imagen del chat a tamaño completo" /></div>
 
   <div class="toast" id="toast"></div>
 

@@ -298,6 +298,7 @@ function renderAll() {
   try { renderAlmacenSection(); }     catch(e) { console.error('renderAlmacenSection:', e); }
   try { renderAlmacenHistorial(); }   catch(e) { console.error('renderAlmacenHistorial:', e); }
   try { renderHistorial(); }          catch(e) { console.error('renderHistorial:', e); }
+  try { tPintarLista(); }             catch(e) { console.error('tPintarLista:', e); }
 }
 
 // ─── Events ──────────────────────────────────────────────────────────────────
@@ -655,6 +656,8 @@ document.getElementById('ordersTable').addEventListener('click', e => {
     populateDropdowns();
     renderAll();
   });
+
+  tIniciarChats();
 })();
 
 // ─── HISTORIAL (registro completo, filtrable y exportable) ───────────────────
@@ -794,3 +797,308 @@ document.getElementById('exportCsvHistorial').addEventListener('click', () => {
   a.download = `historial_${rango}.csv`;
   a.click();
 });
+
+// ─── CHATS CON MONTADORES (taller) ────────────────────────────────────────────
+// Un chat por pedido (CHAT-TALLER.sql). El taller (admin y almacén) responde
+// con texto o imagen y es el ÚNICO que puede cerrar el chat ("Resuelto ·
+// eliminar chat"): se borran las imágenes de Storage y, después, el chat con
+// sus mensajes, para los dos. Las reglas las impone la BD; esto es la interfaz.
+const tchat = { chats: [], sel: null, mensajes: [], urls: {}, imagen: null, enviando: false, confirmando: false };
+
+// openModal (app.js) lo usa para mostrar "Abrir chat" en el detalle del pedido.
+window.chatIdDePedido = (pedidoId) => {
+  const c = tchat.chats.find(x => x.pedidoId === Number(pedidoId));
+  return c ? c.id : null;
+};
+
+const T_ICO = {
+  check:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111110" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  img:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0EFE8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>',
+  enviar: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111110" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  x:      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B7B7B6" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+};
+
+const tChatSel   = () => tchat.chats.find(c => c.id === tchat.sel) || null;
+const tPedidoDe  = c => allPedidos.find(p => p.id === c.pedidoId) || null;
+function tRef(c) { const p = tPedidoDe(c); return p && p.referencia ? p.referencia : `#${c.pedidoId}`; }
+function tMontador(c) {
+  const u = allUsers.find(x => x.id === c.montadorUid);
+  const p = tPedidoDe(c);
+  return (u && u.nombre) || (p && p.montador) || 'Montador';
+}
+const tDos = n => String(n).padStart(2, '0');
+function tHora(iso, larga) {
+  const d = new Date(iso); const hoy = new Date();
+  const hm = `${tDos(d.getHours())}:${tDos(d.getMinutes())}`;
+  if (d.toDateString() === hoy.toDateString()) return hm;
+  const ayer = new Date(); ayer.setDate(hoy.getDate() - 1);
+  if (!larga && d.toDateString() === ayer.toDateString()) return 'Ayer';
+  return larga ? `${tDos(d.getDate())}/${tDos(d.getMonth() + 1)} ${hm}` : `${tDos(d.getDate())}/${tDos(d.getMonth() + 1)}`;
+}
+
+function tPintarBadge() {
+  const n = tchat.chats.filter(c => c.noLeidosTaller > 0).length;
+  const b = document.getElementById('navChatsBadge');
+  if (b) { b.hidden = !n; b.textContent = n; }
+  const cnt = document.getElementById('tChatsCount');
+  if (cnt) cnt.textContent = `${tchat.chats.length} abierto${tchat.chats.length !== 1 ? 's' : ''}${n ? ` · ${n} con mensajes nuevos` : ''}`;
+}
+
+function tPintarLista() {
+  const box = document.getElementById('tChatsList');
+  if (!box) return;
+  tPintarBadge();
+  if (!tchat.chats.length) {
+    box.innerHTML = '<span class="ey" style="font-size:10px;color:var(--ink2)">Chats abiertos · 0</span><div class="tchats-empty">No hay chats abiertos. Los abre el montador desde el detalle de su pedido.</div>';
+    return;
+  }
+  box.innerHTML = `<span class="ey" style="font-size:10px;color:var(--ink2)">Chats abiertos · ${tchat.chats.length}</span>` +
+    tchat.chats.map(c => {
+      const u = c.ultimo;
+      const prev = u ? (u.imagen_path && !u.texto ? 'Imagen' : u.texto) : 'Sin mensajes';
+      return `<button type="button" class="tchat-item${c.id === tchat.sel ? ' on' : ''}" data-tchat="${escHtml(c.id)}">
+        <span class="r1">
+          <span class="ref">REF ${escHtml(tRef(c))}</span>
+          <span class="h">${c.noLeidosTaller ? '<span class="dot" title="Mensajes nuevos"></span>' : ''}${escHtml(tHora(u ? u.creado_el : c.ultimoMensajeEl))}</span>
+        </span>
+        <span class="r2">${escHtml(tMontador(c))} · ${escHtml(prev)}</span>
+      </button>`;
+    }).join('');
+}
+
+async function tCargarChats() {
+  tchat.chats = await getChatsResumen();
+  if (tchat.sel && !tChatSel()) tCerrarPanel();
+  tPintarLista();
+}
+
+function tCerrarPanel() {
+  tchat.sel = null; tchat.mensajes = []; tchat.confirmando = false;
+  tQuitarImagen();
+  const pane = document.getElementById('tChatPane');
+  if (pane) pane.innerHTML = '<div class="tchat-nada">Elige un chat de la lista.</div>';
+}
+
+function tPintarPanel() {
+  const c = tChatSel();
+  const pane = document.getElementById('tChatPane');
+  if (!c || !pane) return;
+  const p = tPedidoDe(c);
+  const resumen = [tMontador(c), p ? `${p.cantidad} ${Number(p.cantidad) === 1 ? 'pieza' : 'piezas'}` : '', p && p.ral ? p.ral : '', p ? p.estado : ''].filter(Boolean).join(' · ');
+  pane.innerHTML = `
+    <div class="tchat-head">
+      <span class="tt"><span class="ref">REF ${escHtml(tRef(c))}</span><span class="sub">${escHtml(resumen)}</span></span>
+      <button type="button" class="tbtn" id="tVerPedido"${p ? '' : ' disabled'}>Ver pedido</button>
+      <button type="button" class="tbtn lime" id="tResuelto">${T_ICO.check} Resuelto · eliminar chat</button>
+    </div>
+    <div class="tchat-confirm" id="tConfirm" hidden>
+      <span class="q">¿Dar por resuelto el chat de <strong>REF ${escHtml(tRef(c))}</strong>? Se eliminarán los mensajes y las imágenes para el taller y para el montador. No se puede deshacer.</span>
+      <button type="button" class="tbtn" id="tConfirmNo">Cancelar</button>
+      <button type="button" class="tbtn bone" id="tConfirmSi">Sí, eliminar chat</button>
+    </div>
+    <div class="tchat-msgs" id="tMsgs"></div>
+    <div class="tchat-preview" id="tPreview" hidden></div>
+    <div class="tchat-composer">
+      <button type="button" class="ibtn" id="tAdjuntar" aria-label="Adjuntar imagen" title="Adjuntar imagen">${T_ICO.img}</button>
+      <label for="tTxt" class="m-sr">Mensaje</label>
+      <input type="text" id="tTxt" placeholder="Responder a ${escHtml(tMontador(c).split(' ')[0])}…" autocomplete="off" maxlength="4000" />
+      <button type="button" class="ibtn send" id="tEnviar" aria-label="Enviar">${T_ICO.enviar}</button>
+      <input type="file" id="tFile" accept="image/*" hidden />
+    </div>`;
+}
+
+async function tPintarMensajes() {
+  const box = document.getElementById('tMsgs');
+  const c = tChatSel();
+  if (!box || !c) return;
+  const paths = tchat.mensajes.filter(m => m.imagen_path).map(m => m.imagen_path);
+  if (paths.length) Object.assign(tchat.urls, await urlsFirmadasChat(paths));
+  if (box !== document.getElementById('tMsgs')) return;
+  const ab = new Date(c.creadoEl);
+  const nombre = tMontador(c);
+  box.innerHTML = `<span class="sep">CHAT ABIERTO POR ${escHtml(nombre.toUpperCase())} · ${tDos(ab.getDate())}/${tDos(ab.getMonth() + 1)} · ${tDos(ab.getHours())}:${tDos(ab.getMinutes())}</span>` +
+    tchat.mensajes.map(m => {
+      const mont = m.autor_rol === 'montador';
+      const url = m.imagen_path ? tchat.urls[m.imagen_path] : null;
+      const img = m.imagen_path
+        ? (url ? `<button type="button" class="img" data-tver="${escHtml(url)}" aria-label="Ver imagen"><img src="${escHtml(url)}" alt="Imagen del chat" /></button>` : '<span class="h">Imagen no disponible</span>')
+        : '';
+      return `<div class="tmsg ${mont ? 'mont' : 'tall'}">
+        ${mont ? `<span class="who">${escHtml(nombre)}</span>` : ''}
+        ${m.texto ? `<div class="bub">${escHtml(m.texto)}</div>` : ''}
+        ${img}
+        <span class="h">${escHtml(tHora(m.creado_el, true))}</span>
+      </div>`;
+    }).join('');
+  box.scrollTop = box.scrollHeight;
+  box.querySelectorAll('img').forEach(img => {
+    if (!img.complete) img.addEventListener('load', () => { box.scrollTop = box.scrollHeight; }, { once: true });
+  });
+}
+
+async function tMarcarLeido() {
+  const c = tChatSel();
+  if (!c || document.visibilityState !== 'visible' || !c.noLeidosTaller) return;
+  await marcarChatLeido(c.id);
+  c.noLeidosTaller = 0;
+  tPintarLista();
+}
+
+async function tAbrirChat(chatId) {
+  if (!tchat.chats.find(c => c.id === chatId)) await tCargarChats();
+  if (!tchat.chats.find(c => c.id === chatId)) { showToast('Ese chat ya no existe.'); return; }
+  if (tchat.sel !== chatId) { tQuitarImagen(); tchat.confirmando = false; }
+  tchat.sel = chatId;
+  tchat.mensajes = [];
+  tPintarLista();
+  tPintarPanel();
+  try {
+    const msgs = await getMensajesChat(chatId);
+    if (tchat.sel !== chatId) return;
+    tchat.mensajes = msgs;
+    await tPintarMensajes();
+    await tMarcarLeido();
+  } catch (err) {
+    console.error('tAbrirChat:', err);
+    showToast('No se pudo cargar el chat.');
+  }
+}
+
+function tQuitarImagen() {
+  if (tchat.imagen && tchat.imagen.url) URL.revokeObjectURL(tchat.imagen.url);
+  tchat.imagen = null;
+  const pv = document.getElementById('tPreview');
+  if (pv) { pv.hidden = true; pv.innerHTML = ''; }
+}
+
+async function tElegirImagen(file) {
+  if (!file) return;
+  if (!/^image\//.test(file.type)) { showToast('Solo se pueden enviar imágenes.'); return; }
+  const f = await comprimirImagen(file);
+  if (!/^image\/(jpeg|png|webp|gif)$/.test(f.type)) { showToast('Formato de imagen no soportado. Prueba con JPG o PNG.'); return; }
+  if (f.size > 10 * 1024 * 1024) { showToast('La imagen supera los 10 MB.'); return; }
+  tQuitarImagen();
+  tchat.imagen = { file: f, url: URL.createObjectURL(f) };
+  const pv = document.getElementById('tPreview');
+  pv.innerHTML = `<img src="${tchat.imagen.url}" alt="Imagen lista para enviar" /><span>1 imagen lista para enviar</span>
+    <button type="button" class="ibtn" id="tPreviewX" aria-label="Quitar imagen" style="width:44px;height:44px;border:none;background:transparent;cursor:pointer">${T_ICO.x}</button>`;
+  pv.hidden = false;
+}
+
+async function tEnviar() {
+  const c = tChatSel();
+  if (!c || tchat.enviando) return;
+  const input = document.getElementById('tTxt');
+  const texto = input.value.trim();
+  const imagen = tchat.imagen ? tchat.imagen.file : null;
+  if (!texto && !imagen) return;
+  tchat.enviando = true;
+  const btn = document.getElementById('tEnviar'); btn.disabled = true;
+  try {
+    const m = await enviarMensajeChat(c.id, { texto, imagen });
+    input.value = '';
+    tQuitarImagen();
+    if (tchat.sel === c.id && !tchat.mensajes.find(x => x.id === m.id)) tchat.mensajes.push(m);
+    await tPintarMensajes();
+    tRefrescar();
+  } catch (err) {
+    console.error('tEnviar:', err);
+    showToast('No se pudo enviar el mensaje. ' + (err.message || ''), 4000);
+  } finally {
+    tchat.enviando = false;
+    const b = document.getElementById('tEnviar'); if (b) b.disabled = false;
+  }
+}
+
+async function tEliminar() {
+  const c = tChatSel();
+  if (!c) return;
+  const si = document.getElementById('tConfirmSi');
+  const no = document.getElementById('tConfirmNo');
+  si.disabled = true; no.disabled = true; si.textContent = 'Eliminando…';
+  try {
+    await eliminarChatTaller(c.id);
+    tchat.chats = tchat.chats.filter(x => x.id !== c.id);
+    tCerrarPanel();
+    tPintarLista();
+    showToast(`Chat de REF ${tRef(c)} eliminado.`);
+  } catch (err) {
+    // Si falla el borrado de imágenes, el chat NO se borra (ver eliminarChatTaller).
+    console.error('tEliminar:', err);
+    showToast('No se pudo eliminar el chat: ' + (err.message || err), 5000);
+    si.disabled = false; no.disabled = false; si.textContent = 'Sí, eliminar chat';
+  }
+}
+
+let _tRefresco = null;
+function tRefrescar() {
+  clearTimeout(_tRefresco);
+  _tRefresco = setTimeout(tCargarChats, 250);
+}
+
+document.getElementById('tChatsList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tchat]');
+  if (b) tAbrirChat(b.dataset.tchat);
+});
+
+document.getElementById('tChatPane').addEventListener('click', (e) => {
+  const id = e.target.closest('button') ? e.target.closest('button').id : '';
+  if (id === 'tVerPedido') { const c = tChatSel(); const p = c && tPedidoDe(c); if (p) openModal(p); }
+  if (id === 'tResuelto')  { document.getElementById('tConfirm').hidden = false; }
+  if (id === 'tConfirmNo') { document.getElementById('tConfirm').hidden = true; }
+  if (id === 'tConfirmSi') tEliminar();
+  if (id === 'tAdjuntar')  document.getElementById('tFile').click();
+  if (id === 'tPreviewX')  tQuitarImagen();
+  if (id === 'tEnviar')    tEnviar();
+  const v = e.target.closest('[data-tver]');
+  if (v) {
+    document.getElementById('tVisorImg').src = v.dataset.tver;
+    document.getElementById('tVisor').hidden = false;
+  }
+});
+document.getElementById('tChatPane').addEventListener('change', async (e) => {
+  if (e.target.id === 'tFile') { await tElegirImagen(e.target.files[0]); e.target.value = ''; }
+});
+document.getElementById('tChatPane').addEventListener('keydown', (e) => {
+  if (e.target.id === 'tTxt' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); tEnviar(); }
+});
+document.getElementById('tVisor').addEventListener('click', () => {
+  document.getElementById('tVisor').hidden = true;
+  document.getElementById('tVisorImg').removeAttribute('src');
+});
+
+// "Abrir chat" desde el modal de detalle del pedido.
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-abrir-chat]');
+  if (!b) return;
+  document.getElementById('modalOverlay').style.display = 'none';
+  tAbrirChat(b.dataset.abrirChat);
+  document.getElementById('chats').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+function tIniciarChats() {
+  tCargarChats();
+  subscribeChats({
+    onMensaje: async (m) => {
+      if (tchat.sel === m.chat_id && !tchat.mensajes.find(x => x.id === m.id)) {
+        tchat.mensajes.push(m);
+        await tPintarMensajes();
+        if (m.autor_rol === 'montador' && document.visibilityState === 'visible') {
+          await marcarChatLeido(m.chat_id);
+        }
+      }
+      tRefrescar();
+    },
+    onChat: (payload) => {
+      // Otro miembro del taller lo ha cerrado mientras estaba abierto aquí.
+      if (payload.eventType === 'DELETE' && payload.old && payload.old.id === tchat.sel) {
+        showToast('Este chat se ha cerrado.');
+        tCerrarPanel();
+      }
+      tRefrescar();
+    },
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') { tRefrescar(); if (tchat.sel) marcarChatLeido(tchat.sel); }
+  });
+}

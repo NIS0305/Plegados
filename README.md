@@ -95,6 +95,24 @@ respetarlo en cada página:
 supabase.js  →  auth.js  →  app.js  →  dashboard.js   (solo el dashboard)
 ```
 
+### App móvil del montador, planos múltiples y chat con taller
+
+`index.html` es una sola página con vistas por hash (`#inicio`, `#nuevo`,
+`#enviado`, `#pedidos`, `#pedido/<id>`, `#chats`, `#chat/<pedidoId>`); maqueta
+en `rediseno-mockups/maqueta-movil-montador.html`. Antes de desplegarla hay que
+ejecutar en el SQL Editor, en este orden:
+
+1. `PEDIDOS-ARCHIVOS.sql`: columna `pedidos.archivos` (hasta 5 planos).
+   `file_path`/`file_name`/`file_type` siguen guardando el plano 1 para n8n,
+   la etiqueta y los CSV.
+2. `CHAT-TALLER.sql`: tablas `chats` y `chat_mensajes`, RLS, RPCs, Realtime
+   y bucket privado `chat-imagenes`.
+3. (Opcional) `VERIFICAR-CHAT.sql`: pruebas de permisos simulando usuarios,
+   dentro de una transacción con ROLLBACK.
+
+Solo el taller (roles `admin` y `almacen`) puede cerrar un chat, desde la
+sección «Chats» del dashboard; al cerrarlo se borran sus mensajes e imágenes.
+
 ### Datos de prueba
 
 La antigua página `seed.html` se eliminó: contenía credenciales de demostración
