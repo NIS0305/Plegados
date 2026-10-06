@@ -7,6 +7,19 @@ const N8N_ETIQUETA_WEBHOOK = 'https://n8n.tmisystem.com/webhook/generar-etiqueta
 
 const _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
+// ── Estados del pedido: definición ÚNICA para toda la app ─────────────────────
+// Valores EXACTOS de la BD (n8n/Telegram escriben 'Completado'); no renombrar.
+//   Pendiente → En taller → Completado → Entregado a montador | Entregado a reparto
+// Por hacer / En curso      = Pendiente, En taller (y cualquier valor no oficial).
+// Finalizados / Terminados  = Completado y los dos Entregado.
+// app.js (montador) y dashboard.js (taller) usan SOLO esto. Ver ESTADOS-REVISION.sql.
+const ESTADOS = ['Pendiente', 'En taller', 'Completado', 'Entregado a montador', 'Entregado a reparto'];
+const ESTADOS_FINALIZADOS = ['Completado', 'Entregado a montador', 'Entregado a reparto'];
+
+function esFinalizado(estado) {
+  return ESTADOS_FINALIZADOS.includes(estado);
+}
+
 // ── Row mappers ───────────────────────────────────────────────────────────────
 function rowToPedido(r) {
   return {

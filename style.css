@@ -244,6 +244,8 @@ input.invalid, select.invalid, textarea.invalid { border-color: var(--danger); }
 .pill.proc, .badge-blue   { color: var(--carbon); background: var(--lime); }
 .pill.pend, .badge-yellow, .badge-gray { color: var(--silver); background: rgba(255,255,255,.07); border: 1px solid var(--line2); }
 .pill.done, .badge-green, .badge-indigo, .badge-teal, .badge-emerald { color: var(--lime); background: transparent; border: 1px solid var(--lime-30); }
+/* En taller = fabricándose: lima suave (ni gris de pendiente ni contorno de finalizado) */
+.pill.taller, .badge-taller { color: var(--lime); background: var(--lime-12); border: 1px solid transparent; }
 .badge-gray { text-transform: none; letter-spacing: .02em; font-family: var(--body); font-weight: 600; }
 
 /* Selector de estado en fila/tarjeta (contrato JS: .estado-select-table) */
@@ -752,8 +754,9 @@ textarea.m-textarea { height: auto; min-height: 0; padding: 12px 14px; font-size
   font-family: var(--ey); font-size: 10px; font-weight: 700; letter-spacing: .1em; background: rgba(255,255,255,.07); color: var(--bone);
 }
 .m-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.m-chip.proc { color: var(--lime); background: transparent; border: 1px solid var(--lime-30); }
-.m-chip.fin { color: var(--lime); background: var(--lime-12); }
+/* Chips de estado (maqueta): Pendiente gris · En taller lima suave · Completado/Entregado lima sólido */
+.m-chip.taller { color: var(--lime); background: var(--lime-12); }
+.m-chip.fin { color: var(--carbon); background: var(--lime); }
 .m-empty { padding: 28px 8px; text-align: center; color: var(--mute); font-size: 14px; }
 
 /* Detalle */
@@ -766,6 +769,7 @@ textarea.m-textarea { height: auto; min-height: 0; padding: 12px 14px; font-size
 .m-prog-labels span:nth-child(2) { text-align: center; }
 .m-prog-labels span:nth-child(3) { text-align: right; }
 .m-prog-labels span.on { color: var(--lime); }
+.m-prog-entrega { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.06); font-size: 14px; font-weight: 600; color: var(--bone); }
 .m-sec { display: flex; flex-direction: column; gap: 8px; }
 .m-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .m-gal {
@@ -963,3 +967,19 @@ textarea.m-textarea { height: auto; min-height: 0; padding: 12px 14px; font-size
   .tchats-list { max-width: none; border-right: none; border-bottom: 1px solid var(--line); max-height: 260px; }
   .tmsg { max-width: 85%; }
 }
+
+/* ===== Tablero con todos los pedidos: filtro por origen y etiquetas ===== */
+.tablero-filtro { display: flex; flex-wrap: wrap; gap: 8px; margin: -8px 0 16px; }
+.tablero-filtro .tf {
+  height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--line3); background: transparent; color: var(--silver);
+  font-family: var(--ey); font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.tablero-filtro .tf:hover { color: var(--bone); border-color: rgba(255,255,255,.25); }
+.tablero-filtro .tf.on { color: var(--carbon); background: var(--bone); border-color: var(--bone); }
+.tablero-filtro .tf .n { font-weight: 700; opacity: .7; letter-spacing: 0; }
+.tag.montador { color: var(--bone); background: rgba(255,255,255,.08); text-transform: none; letter-spacing: .02em; }
+button.tag { border: none; cursor: pointer; font: inherit; font-family: var(--ey); font-size: 10px; font-weight: 700; }
+.tag.chat { display: inline-flex; align-items: center; gap: 5px; color: var(--lime); background: transparent; border: 1px solid var(--lime-30); }
+.tag.chat.nuevo { background: var(--lime-12); }
+.tag.chat .tdot { width: 6px; height: 6px; border-radius: 50%; background: var(--lime); }

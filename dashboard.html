@@ -38,30 +38,37 @@
         <div class="glow"></div>
         <span class="lab kpi-label">Total pedidos</span>
         <span class="num kpi-num" id="kpiTotalNum">0</span>
-        <span class="sub">Montadores · con los filtros activos</span>
+        <span class="sub">Todos los orígenes · con los filtros activos</span>
       </div>
       <div class="kpi kpi-card">
-        <span class="lab kpi-label">Pendientes</span>
+        <span class="lab kpi-label">Por hacer</span>
         <span class="num kpi-num" id="kpiPendienteNum">0</span>
         <span class="sub kpi-pct" id="kpiPendientePct"></span>
       </div>
       <div class="kpi kpi-card">
-        <span class="lab kpi-label">Completados</span>
+        <span class="lab kpi-label">Finalizados</span>
         <span class="num kpi-num" id="kpiCompletadoNum">0</span>
         <span class="sub kpi-pct" id="kpiCompletadoPct"></span>
       </div>
     </div>
 
-    <!-- TABLERO: Por hacer / Finalizados (pedidos de almacén) -->
+    <!-- TABLERO: Por hacer / Finalizados con TODOS los pedidos (montadores,
+         almacén y correo). Partición por esFinalizado() de supabase.js. -->
+    <div class="tablero-filtro" id="tableroFiltro" role="group" aria-label="Filtrar el tablero por origen">
+      <button type="button" class="tf on" data-tablero-origen="todos" aria-pressed="true">Todos <span class="n"></span></button>
+      <button type="button" class="tf" data-tablero-origen="montador" aria-pressed="false">Montadores <span class="n"></span></button>
+      <button type="button" class="tf" data-tablero-origen="almacen" aria-pressed="false">Almacén <span class="n"></span></button>
+      <button type="button" class="tf" data-tablero-origen="correo" aria-pressed="false">Correo <span class="n"></span></button>
+    </div>
     <div class="board">
-      <!-- POR HACER = almacén activo (no finalizado) -->
+      <!-- POR HACER = Pendiente + En taller (del más antiguo al más nuevo) -->
       <section>
         <div class="col-head" id="almacenToggle" style="cursor:pointer;user-select:none">
           <div class="bar"></div>
           <h2 class="col-title cond">Por hacer</h2>
           <span class="count" id="almacenCount"></span>
           <div class="section-actions">
-            <button class="btn btn-secondary btn-sm" id="exportCsvAlmacen" title="Exportar todos los pedidos de almacén (activos + historial)">⬇ CSV</button>
+            <button class="btn btn-secondary btn-sm" id="exportCsvAlmacen" title="Exportar el tablero (Por hacer + Finalizados) con el filtro de origen activo">⬇ CSV</button>
             <span class="chev" id="almacenChevron" style="transform:rotate(90deg)">▸</span>
           </div>
         </div>
@@ -72,7 +79,7 @@
         </div>
       </section>
 
-      <!-- FINALIZADOS = historial de almacén (esFinalizado) -->
+      <!-- FINALIZADOS = Completado + Entregados (del más reciente al más antiguo) -->
       <section>
         <div class="col-head" id="almacenHistToggle" style="cursor:pointer;user-select:none">
           <div class="bar dim"></div>
@@ -121,8 +128,8 @@
           <select id="fEstado" class="bi-select">
             <option value="">Todos</option>
             <option value="Pendiente">Pendiente</option>
-            <option value="Completado">Completado</option>
             <option value="En taller">En taller</option>
+            <option value="Completado">Completado</option>
             <option value="Entregado a montador">Entregado a montador</option>
             <option value="Entregado a reparto">Entregado a reparto</option>
           </select>
@@ -269,9 +276,8 @@
               <select id="histEstado" class="bi-select">
                 <option value="">Todos</option>
                 <option value="Pendiente">Pendiente</option>
-                <option value="En proceso">En proceso</option>
-                <option value="Completado">Completado</option>
                 <option value="En taller">En taller</option>
+                <option value="Completado">Completado</option>
                 <option value="Entregado a montador">Entregado a montador</option>
                 <option value="Entregado a reparto">Entregado a reparto</option>
               </select>

@@ -14,36 +14,34 @@ function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// Pasos del stepper del modal (dashboard), según ESTADOS (supabase.js). Los dos
+// "Entregado" son alternativos: comparten el último paso.
 const WORKFLOW_STEPS = [
-  { key: 'Pendiente',            icon: '📋', label: 'Pendiente' },
-  { key: 'En proceso',           icon: '🔧', label: 'En proceso' },
-  { key: 'Completado',           icon: '✅', label: 'Completado' },
-  { key: 'En taller',            icon: '🏭', label: 'En taller' },
-  { key: 'Entregado a montador', icon: '👷', label: 'Entregado a ti' },
-  { key: 'Entregado a reparto',  icon: '🎉', label: 'Entregado' },
+  { keys: ['Pendiente'],                                   icon: '📋', label: 'Pendiente' },
+  { keys: ['En taller'],                                   icon: '🏭', label: 'En taller' },
+  { keys: ['Completado'],                                  icon: '✅', label: 'Completado' },
+  { keys: ['Entregado a montador', 'Entregado a reparto'], icon: '🚚', label: 'Entregado' },
 ];
 
 function badgeClass(estado) {
-  if (estado === 'Pendiente')            return 'badge-yellow';
-  if (estado === 'En proceso')           return 'badge-blue';
-  if (estado === 'Completado')           return 'badge-green';
-  if (estado === 'En taller')            return 'badge-indigo';
-  if (estado === 'Entregado a montador') return 'badge-teal';
-  if (estado === 'Entregado a reparto')  return 'badge-emerald';
+  if (estado === 'Pendiente')  return 'badge-yellow';
+  if (estado === 'En taller')  return 'badge-taller';
+  if (esFinalizado(estado))    return 'badge-green';
   return 'badge-gray';
 }
 
 function renderStepper(estado) {
-  const currentIdx = WORKFLOW_STEPS.findIndex(s => s.key === estado);
+  const currentIdx = WORKFLOW_STEPS.findIndex(s => s.keys.includes(estado));
   return `<div class="stepper">
     ${WORKFLOW_STEPS.map((s, i) => {
       const done   = i < currentIdx;
       const active = i === currentIdx;
       const cls    = done ? 'step-done' : active ? 'step-active' : 'step-pending';
+      const label  = active && s.keys.length > 1 ? escHtml(estado) : s.label;
       return `
         <div class="step ${cls}">
           <div class="step-circle">${done ? '✓' : s.icon}</div>
-          <span class="step-label">${s.label}</span>
+          <span class="step-label">${label}</span>
         </div>
         ${i < WORKFLOW_STEPS.length - 1 ? `<div class="step-line ${done ? 'line-done' : ''}"></div>` : ''}
       `;
@@ -190,9 +188,8 @@ if (mApp) (async () => {
   document.body.style.visibility = 'visible';   // autenticado: mostrar (evita el flash)
 
   const $ = id => document.getElementById(id);
-  // Mismo conjunto de "finalizado" que el dashboard (esFinalizado).
-  const FIN = ['Completado', 'En taller', 'Entregado a montador', 'Entregado a reparto'];
-  const esFin = e => FIN.includes(e);
+  // Finalizado = Completado o Entregado: definición única en supabase.js.
+  const esFin = esFinalizado;
   const MAX_PLANOS = 5;
   const MAX_BYTES  = 10 * 1024 * 1024;
 
@@ -211,6 +208,7 @@ if (mApp) (async () => {
     plus:  (c = '#111110') => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`,
     chat:  (c, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a7.5 7.5 0 0 1-11 6.6L4 20l1.4-4.6A7.5 7.5 0 1 1 20 12z"/></svg>`,
     check: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    check16: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     doc:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0EFE8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>',
     pdf:   '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#B7B7B6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/></svg>',
     info:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="m-flexnone"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
@@ -257,7 +255,7 @@ if (mApp) (async () => {
   const noLeidosTotal = () => M.chats.reduce((s, c) => s + (c.noLeidosMontador || 0), 0);
 
   function chipEstado(estado) {
-    const cls = esFin(estado) ? 'fin' : estado === 'En proceso' ? 'proc' : 'pend';
+    const cls = esFin(estado) ? 'fin' : estado === 'En taller' ? 'taller' : 'pend';
     return `<span class="m-chip ${cls}"><span class="m-dot"></span>${escHtml(String(estado || '').toUpperCase())}</span>`;
   }
   function metaPedido(p, conCristal) {
@@ -588,14 +586,14 @@ if (mApp) (async () => {
       return;
     }
     const fin = esFin(p.estado);
-    const paso = fin ? 3 : p.estado === 'En proceso' ? 2 : 1;
+    const paso = fin ? 3 : p.estado === 'En taller' ? 2 : 1;
     const dt = fechaDePedido(p.fecha);
     const planos = planosDe(p);
     const c = chatDe(p.id);
     const celda = (k, v, cls = '') => `<div class="m-cell ${cls}"><span class="m-label sm">${k}</span><span class="m-cell-v">${v}</span></div>`;
-
-    const pdfUrl = p.pdfPath      ? getPublicUrl(p.pdfPath)      : null;
-    const etqUrl = p.etiquetaPath ? getPublicUrl(p.etiquetaPath) : null;
+    // Entregado: a quién (debajo de la barra).
+    const entregado = p.estado === "Entregado a montador" ? "Entregado a ti"
+                    : p.estado === "Entregado a reparto"  ? "En reparto" : "";
 
     $('v-pedido').innerHTML = `
       ${cabecera('', 'pedidos',
@@ -609,6 +607,7 @@ if (mApp) (async () => {
             <span class="${paso >= 2 ? 'on' : ''}">EN TALLER</span>
             <span class="${paso >= 3 ? 'on' : ''}">TERMINADO</span>
           </div>
+          ${entregado ? `<div class="m-prog-entrega">${ICO.check16}${entregado}</div>` : ''}
         </div>
 
         <section class="m-sec">
@@ -637,15 +636,6 @@ if (mApp) (async () => {
           <span class="${p.notaAdmin ? '' : 'm-muted'}">${p.notaAdmin ? escHtml(p.notaAdmin) : 'Sin nota todavía.'}</span>
         </div>
 
-        <section class="m-sec">
-          <span class="m-label">DOCUMENTOS</span>
-          <div class="m-docs">
-            ${pdfUrl ? `<div class="m-doc"><span class="m-doc-t">Plano (PDF)</span><a href="${escHtml(pdfUrl)}" target="_blank" rel="noopener" class="m-doc-btn">Abrir</a></div>` : ''}
-            ${etqUrl
-              ? `<div class="m-doc"><span class="m-doc-t">Etiqueta</span><a href="${escHtml(etqUrl)}" target="_blank" rel="noopener" class="m-doc-btn">Abrir</a></div>`
-              : `<div class="m-doc"><span class="m-doc-t">Etiqueta <span class="m-muted">· aún no generada</span></span><button type="button" id="genEtiquetaBtn" class="m-doc-btn" data-id="${p.id}" data-ref="${escHtml(p.referencia || '')}">Generar</button></div>`}
-          </div>
-        </section>
       </main>
       <footer class="m-fixfoot">
         <a href="#chat/${p.id}" class="m-btn-chat">
@@ -658,13 +648,6 @@ if (mApp) (async () => {
         </a>
       </footer>`;
   }
-
-  // Tras generar la etiqueta desde el detalle: refrescar la pantalla, no abrir modal.
-  window.alGenerarEtiqueta = (p) => {
-    const i = M.pedidos.findIndex(x => x.id === p.id);
-    if (i >= 0) M.pedidos[i] = p;
-    if (ruta.vista === 'pedido' && Number(ruta.arg) === p.id) pintarPedido();
-  };
 
   // ── 6 · Chats con taller ────────────────────────────────────────────────────
   function pintarChats() {
@@ -960,10 +943,11 @@ if (mApp) (async () => {
 
 
 // ===== Generar etiqueta desde la app (llama al workflow de n8n) =====
-// Disponible en cualquier pagina que abra el modal (formulario y dashboard).
+// SOLO en el dashboard (admin/almacén), desde el modal de detalle. El montador
+// no gestiona documentos: en su app (index.html, #mApp) no se registra.
 // El webhook genera la MISMA etiqueta que Telegram, la guarda en Drive y en
 // Supabase Storage, y rellena pedidos.etiqueta_path. Ver INTEGRACION-N8N.md.
-document.addEventListener('click', async (e) => {
+if (!document.getElementById('mApp')) document.addEventListener('click', async (e) => {
   const btn = e.target.closest('#genEtiquetaBtn');
   if (!btn || btn.disabled) return;
   const id  = Number(btn.dataset.id);
@@ -986,9 +970,7 @@ document.addEventListener('click', async (e) => {
     const p = await getPedidoById(id);
     if (p) {
       if (etiquetaPath && !p.etiquetaPath) p.etiquetaPath = etiquetaPath;
-      // En la app del montador el detalle es una pantalla, no el modal.
-      if (typeof window.alGenerarEtiqueta === 'function') window.alGenerarEtiqueta(p);
-      else openModal(p);
+      openModal(p);
     }
     showToast('Etiqueta generada.');
   } catch (err) {

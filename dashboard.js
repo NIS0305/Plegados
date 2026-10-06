@@ -23,21 +23,22 @@
 // fallo silencioso descrito arriba.
 const BORRADO_HABILITADO = false;
 
+// ESTADOS y esFinalizado() viven en supabase.js (definición única de la app).
 const COLORS = {
   'Pendiente':            '#6E6E6D',
-  'En proceso':           '#A3E635',
+  'En taller':            '#A3E635',
   'Completado':           '#2D7C02',
-  'En taller':            '#5A9E1A',
   'Entregado a montador': '#B7B7B6',
   'Entregado a reparto':  '#3F5B2A',
 };
+const COLOR_OTRO = '#3a3a35';   // valores fuera de la lista oficial (ver ESTADOS-REVISION.sql)
 
-const ESTADOS = ['Pendiente', 'Completado', 'En taller', 'Entregado a montador', 'Entregado a reparto'];
-
-// Estado "finalizado": Completado o posterior. Es el mismo conjunto que usa el
-// resto de la app (stepper de app.js) para dar un pedido por terminado.
-function esFinalizado(estado) {
-  return ['Completado', 'En taller', 'Entregado a montador', 'Entregado a reparto'].includes(estado);
+// <option>s de estado en el orden oficial. Si el pedido tiene un valor antiguo
+// o no oficial (p. ej. "En proceso"), se muestra marcado para no falsearlo.
+function opcionesEstado(actual) {
+  const extra = actual && !ESTADOS.includes(actual)
+    ? `<option value="${escHtml(actual)}" selected>${escHtml(actual)} (no oficial)</option>` : '';
+  return extra + ESTADOS.map(s => `<option value="${s}"${s === actual ? ' selected' : ''}>${s}</option>`).join('');
 }
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -94,8 +95,9 @@ function getFiltered() {
 // ─── KPIs ────────────────────────────────────────────────────────────────────
 function renderKPIs(list) {
   const total      = list.length;
-  const pendiente  = list.filter(p => p.estado === 'Pendiente').length;
-  const completado = list.filter(p => p.estado === 'Completado').length;
+  // Por hacer + Finalizados = Total (misma partición que el tablero).
+  const pendiente  = list.filter(p => !esFinalizado(p.estado)).length;
+  const completado = list.filter(p =>  esFinalizado(p.estado)).length;
 
   document.getElementById('kpiTotalNum').textContent      = total;
   document.getElementById('kpiPendienteNum').textContent  = pendiente;
@@ -163,10 +165,11 @@ function initCharts() {
 function updateCharts(list) {
   if (!charts.estado) return;
   const byEstado     = countBy(list, 'estado');
-  const estadoLabels = ESTADOS.filter(k => byEstado[k]);
+  // Orden oficial; si hay valores no oficiales, al final (para que el total cuadre).
+  const estadoLabels = [...ESTADOS, ...Object.keys(byEstado).filter(k => !ESTADOS.includes(k))].filter(k => byEstado[k]);
   charts.estado.data.labels                        = estadoLabels;
   charts.estado.data.datasets[0].data              = estadoLabels.map(k => byEstado[k] || 0);
-  charts.estado.data.datasets[0].backgroundColor   = estadoLabels.map(k => COLORS[k]);
+  charts.estado.data.datasets[0].backgroundColor   = estadoLabels.map(k => COLORS[k] || COLOR_OTRO);
   charts.estado.update();
 
   const today = new Date(); today.setHours(23, 59, 59, 999);
@@ -247,7 +250,7 @@ function renderTable(list) {
       <td style="text-align:center">${escHtml(p.cantidad)}</td>
       <td>
         <select class="estado-select-table" data-id="${p.id}">
-          ${ESTADOS.map(s => `<option value="${s}"${s === p.estado ? ' selected' : ''}>${s}</option>`).join('')}
+          ${opcionesEstado(p.estado)}
         </select>
       </td>
       <td style="text-align:center">${dibujoHtml}</td>
@@ -295,8 +298,7 @@ function renderAll() {
   try { renderTable(list); }          catch(e) { console.error('renderTable:', e); }
   try { renderChips(); }              catch(e) { console.error('renderChips:', e); }
   try { updateSortHeaders(); }        catch(e) { console.error('updateSortHeaders:', e); }
-  try { renderAlmacenSection(); }     catch(e) { console.error('renderAlmacenSection:', e); }
-  try { renderAlmacenHistorial(); }   catch(e) { console.error('renderAlmacenHistorial:', e); }
+  try { renderTablero(); }            catch(e) { console.error('renderTablero:', e); }
   try { renderHistorial(); }          catch(e) { console.error('renderHistorial:', e); }
   try { tPintarLista(); }             catch(e) { console.error('tPintarLista:', e); }
 }
@@ -396,64 +398,88 @@ document.getElementById('exportCsv').addEventListener('click', () => {
   a.click();
 });
 
-// CSV de almacén: TODOS los pedidos de almacén (activos + historial). Mismo
-// escapado de comillas y mismo BOM (\ufeff) que el de montadores, para que
-// Excel respete los acentos.
+// ─── Tablero POR HACER / FINALIZADOS (TODOS los pedidos) ─────────────────────
+// Montadores, almacén y correo. Por hacer = no finalizados (Pendiente, En
+// taller); Finalizados = esFinalizado() (supabase.js). Cada pedido sale en UNA
+// sola columna. Filtro rápido por origen: Todos / Montadores / Almacén / Correo.
+const tableroState = { origen: 'todos' };
+
+// Origen del pedido: 'correo' (n8n, origen = 'email'), 'almacen' (cuenta con
+// rol almacén) o 'montador' (cualquier otra cuenta).
+function origenPedido(p, almacenIds) {
+  if (p.origen === 'email') return 'correo';
+  return almacenIds.has(p.userId) ? 'almacen' : 'montador';
+}
+function almacenIdsActuales() {
+  return new Set(allUsers.filter(u => u.role === 'almacen').map(u => u.id));
+}
+
+function getTableroPedidos() {
+  const almacenIds = almacenIdsActuales();
+  const f = tableroState.origen;
+  return f === 'todos' ? allPedidos.slice() : allPedidos.filter(p => origenPedido(p, almacenIds) === f);
+}
+
+// Por hacer: lo que más lleva esperando, arriba. Finalizados: lo más reciente arriba.
+function ordenTablero(a, b) { return (parseFecha(a.fecha) - parseFecha(b.fecha)) || (a.id - b.id); }
+
+// CSV del tablero: exactamente lo que muestra el tablero con el filtro de origen
+// activo (Por hacer + Finalizados). Mismo BOM y escapado que los demás CSV.
 document.getElementById('exportCsvAlmacen').addEventListener('click', (e) => {
   e.stopPropagation(); // el botón vive en la cabecera plegable: no abrir/cerrar la sección
-  const list    = getAlmacenPedidos();
-  const headers = ['ID','Solicitante','Fecha','Referencia','RAL','Cantidad','Estado','Origen','Notas','Nota Taller'];
+  const almacenIds = almacenIdsActuales();
+  const NOMBRE_ORIGEN = { montador: 'Montador', almacen: 'Almacén', correo: 'Correo' };
+  const list    = getTableroPedidos().sort(ordenTablero);
+  const headers = ['ID','Solicitante','Fecha','Referencia','RAL','Cantidad','Estado','Columna','Origen','Notas','Nota Taller'];
   const rows    = list.map(p => [
     p.id, p.montador, p.fecha, p.referencia || '', p.ral || '', p.cantidad,
-    p.estado, p.origen || '', p.notas || '', p.notaAdmin || '',
+    p.estado, esFinalizado(p.estado) ? 'Finalizado' : 'Por hacer',
+    NOMBRE_ORIGEN[origenPedido(p, almacenIds)], p.notas || '', p.notaAdmin || '',
   ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
   const csv = [headers.join(','), ...rows].join('\n');
   const a   = document.createElement('a');
-  a.href    = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `almacen_${new Date().toISOString().slice(0,10)}.csv`;
+  a.href    = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `tablero_${tableroState.origen}_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 });
 
-// ─── Almacén section ──────────────────────────────────────────────────────────
-function getAlmacenPedidos() {
-  const almacenIds = new Set(allUsers.filter(u => u.role === 'almacen').map(u => u.id));
-  return allPedidos.filter(p => almacenIds.has(p.userId));
-}
-
-// Fila compartida por la tabla activa y por el historial: MISMO maquetado y
-// MISMAS acciones (select de estado, ver, nota...), para que un pedido marcado
-// por error como finalizado se pueda reabrir desde el historial cambiando el estado.
-function filaAlmacen(p) {
-  // Tarjeta del tablero POR HACER / FINALIZADOS. Mismo contrato que la fila
-  // anterior: <select class="estado-select-table" data-id>, data-action="ver"
-  // y data-action="nota" con data-id. Sin botón de borrado (RLS lo deniega).
+// Tarjeta del tablero. Mismo contrato que antes: <select class="estado-select-table"
+// data-id>, data-action="ver" / "nota" / "chat" con data-id. Sin borrado (RLS lo deniega).
+function filaTablero(p, almacenIds) {
   const fin      = esFinalizado(p.estado);
-  const proc     = p.estado === 'En proceso';
-  const accent   = fin ? 'done' : (proc ? '' : 'pend');
+  const accent   = fin ? 'done' : (p.estado === 'En taller' ? '' : 'pend');
   const imgUrl   = p.filePath ? getPublicUrl(p.filePath) : null;
   const isImage  = p.fileType?.startsWith('image/') || /\.(jpg|jpeg|png|svg|webp)$/i.test(p.filePath || '');
+  const nPlanos  = planosDe(p).length;
   const plano    = imgUrl
     ? (isImage
-        ? `<img src="${imgUrl}" class="table-thumb" data-action="ver" data-id="${p.id}" title="Ver plano" />`
+        ? `<img src="${imgUrl}" class="table-thumb" data-action="ver" data-id="${p.id}" title="Ver plano${nPlanos > 1 ? `s (${nPlanos})` : ''}" />`
         : `<button class="ico" data-action="ver" data-id="${p.id}" title="${escHtml(p.fileName)}">📄</button>`)
     : '';
-  const origen   = p.origen === 'email'
-    ? '<span class="tag email" title="Pedido recibido por email">Email</span>'
-    : '<span class="tag mont">Almacén</span>';
+  const org      = origenPedido(p, almacenIds);
+  const origen   = org === 'correo'
+    ? '<span class="tag email" title="Pedido recibido por correo">Correo</span>'
+    : org === 'almacen'
+      ? '<span class="tag mont">Almacén</span>'
+      : `<span class="tag montador">Montador · ${escHtml(p.montador || '—')}</span>`;
+  const chat     = typeof tchat !== 'undefined' ? tchat.chats.find(c => c.pedidoId === p.id) : null;
+  const chatTag  = chat
+    ? `<button type="button" class="tag chat${chat.noLeidosTaller ? ' nuevo' : ''}" data-action="chat" data-id="${p.id}" title="${chat.noLeidosTaller ? 'Mensajes nuevos del montador' : 'Abrir chat'}">${chat.noLeidosTaller ? '<span class="tdot"></span>' : ''}Chat</button>`
+    : '';
   const ref      = p.referencia ? escHtml(p.referencia) : `#${p.id}`;
-  const meta     = [escHtml(p.montador), p.ral ? escHtml(p.ral) : '', p.cantidad != null ? `${escHtml(p.cantidad)} ${Number(p.cantidad) === 1 ? 'pza' : 'pzas'}` : ''].filter(Boolean).join(' · ');
+  const meta     = [org === 'montador' ? '' : escHtml(p.montador), p.ral ? escHtml(p.ral) : '', p.cantidad != null ? `${escHtml(p.cantidad)} ${Number(p.cantidad) === 1 ? 'pza' : 'pzas'}` : '', nPlanos > 1 ? `${nPlanos} planos` : ''].filter(Boolean).join(' · ');
   return `<div class="card${fin ? ' done' : ''}" data-id="${p.id}">
     <div class="accentbar ${accent}"></div>
     <div class="body">
       <div class="c-l">
         <div class="c-ref cond">${ref}</div>
-        <div class="c-meta">${origen} <span>${meta}</span></div>
+        <div class="c-meta">${origen} ${chatTag} <span>${meta}</span></div>
         ${fin ? `<div class="done-when"><span class="tick">✓</span> ${escHtml(p.estado)} · ${escHtml(p.fecha)}</div>` : `<div class="c-meta"><span>${escHtml(p.fecha)}</span></div>`}
         ${p.notaAdmin ? `<div class="c-note"><b>Nota taller</b> ${escHtml(p.notaAdmin)}</div>` : ''}
       </div>
       <div class="c-r">
         <select class="estado-select-table" data-id="${p.id}" title="Cambiar estado">
-          ${ESTADOS.map(s => `<option value="${s}"${s === p.estado ? ' selected' : ''}>${s}</option>`).join('')}
+          ${opcionesEstado(p.estado)}
         </select>
         <div class="acts">
           ${plano}
@@ -465,34 +491,43 @@ function filaAlmacen(p) {
   </div>`;
 }
 
-function renderAlmacenTabla(bodyId, countId, pedidos, textoVacio) {
+function renderColumnaTablero(bodyId, countId, pedidos, textoVacio, almacenIds) {
   const countEl = document.getElementById(countId);
   if (countEl) countEl.textContent = `${pedidos.length} pedido${pedidos.length !== 1 ? 's' : ''}`;
-
-  const tbody = document.getElementById(bodyId);
-  if (!tbody) return;
-
-  if (!pedidos.length) {
-    tbody.innerHTML = `<div class="empty-state"><span class="empty-icon">—</span><p>${textoVacio}</p></div>`;
-    return;
-  }
-  tbody.innerHTML = pedidos.map(filaAlmacen).join('');
+  const body = document.getElementById(bodyId);
+  if (!body) return;
+  body.innerHTML = pedidos.length
+    ? pedidos.map(p => filaTablero(p, almacenIds)).join('')
+    : `<div class="empty-state"><span class="empty-icon">—</span><p>${textoVacio}</p></div>`;
 }
 
-// Lista ACTIVA de almacén: solo los NO finalizados. Al pasar a 'Completado' (o
-// posterior) el pedido sale de aquí y entra en el historial.
-function renderAlmacenSection() {
-  renderAlmacenTabla('almacenBody', 'almacenCount',
-    getAlmacenPedidos().filter(p => !esFinalizado(p.estado)),
-    'No hay pedidos de almacén activos');
+function renderTablero() {
+  const almacenIds = almacenIdsActuales();
+  const list = getTableroPedidos();
+  // Una partición: cada pedido cae en una sola columna.
+  const porHacer    = list.filter(p => !esFinalizado(p.estado)).sort(ordenTablero);
+  const finalizados = list.filter(p =>  esFinalizado(p.estado)).sort((a, b) => ordenTablero(b, a));
+  renderColumnaTablero('almacenBody', 'almacenCount', porHacer, 'Nada pendiente', almacenIds);
+  renderColumnaTablero('almacenHistBody', 'almacenHistCount', finalizados, 'Sin pedidos finalizados', almacenIds);
+
+  // Filtro rápido con contadores por origen.
+  const cuenta = { todos: allPedidos.length, montador: 0, almacen: 0, correo: 0 };
+  allPedidos.forEach(p => { cuenta[origenPedido(p, almacenIds)]++; });
+  document.querySelectorAll('[data-tablero-origen]').forEach(b => {
+    const k = b.dataset.tableroOrigen;
+    b.classList.toggle('on', k === tableroState.origen);
+    b.setAttribute('aria-pressed', k === tableroState.origen);
+    const n = b.querySelector('.n');
+    if (n) n.textContent = cuenta[k];
+  });
 }
 
-// HISTORIAL de almacén: los finalizados (Completado o posterior).
-function renderAlmacenHistorial() {
-  renderAlmacenTabla('almacenHistBody', 'almacenHistCount',
-    getAlmacenPedidos().filter(p => esFinalizado(p.estado)),
-    'Sin pedidos de almacén finalizados');
-}
+document.getElementById('tableroFiltro').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tablero-origen]');
+  if (!b) return;
+  tableroState.origen = b.dataset.tableroOrigen;
+  renderTablero();
+});
 
 document.getElementById('almacenToggle').addEventListener('click', () => {
   const panel   = document.getElementById('almacenCollapsible');
@@ -510,7 +545,7 @@ document.getElementById('almacenHistToggle').addEventListener('click', () => {
   chevron.style.transform = open ? 'rotate(90deg)' : '';
 });
 
-// Handlers compartidos por la tabla activa y el historial de almacén.
+// Handlers compartidos por las dos columnas del tablero (Por hacer y Finalizados).
 async function onAlmacenClick(e) {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
@@ -520,6 +555,10 @@ async function onAlmacenClick(e) {
     if (p) openModal(p);
   }
   if (btn.dataset.action === 'nota') openNoteModal(id);
+  if (btn.dataset.action === 'chat') {
+    const id2 = window.chatIdDePedido(id);
+    if (id2) { tAbrirChat(id2); document.getElementById('chats').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  }
   if (btn.dataset.action === 'del') {
     if (!confirm('¿Eliminar este pedido?')) return;
     await deletePedido(id);
@@ -539,7 +578,7 @@ async function onAlmacenChange(e) {
   p.estado = sel.value;
   await updatePedidoField(id, { estado: p.estado });
   showToast(`Estado: ${p.estado}`);
-  renderAll();   // re-renderiza las DOS tablas de almacén (activa e historial)
+  renderAll();   // la tarjeta cambia sola de columna (Por hacer ↔ Finalizados)
 }
 
 ['almacenTable', 'almacenHistTable'].forEach(id => {
@@ -870,6 +909,7 @@ async function tCargarChats() {
   tchat.chats = await getChatsResumen();
   if (tchat.sel && !tChatSel()) tCerrarPanel();
   tPintarLista();
+  renderTablero();   // indicador "Chat" (y punto de nuevos) en las tarjetas
 }
 
 function tCerrarPanel() {
@@ -942,6 +982,7 @@ async function tMarcarLeido() {
   await marcarChatLeido(c.id);
   c.noLeidosTaller = 0;
   tPintarLista();
+  renderTablero();
 }
 
 async function tAbrirChat(chatId) {
@@ -1021,6 +1062,7 @@ async function tEliminar() {
     tchat.chats = tchat.chats.filter(x => x.id !== c.id);
     tCerrarPanel();
     tPintarLista();
+    renderTablero();
     showToast(`Chat de REF ${tRef(c)} eliminado.`);
   } catch (err) {
     // Si falla el borrado de imágenes, el chat NO se borra (ver eliminarChatTaller).
