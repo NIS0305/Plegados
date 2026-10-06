@@ -57,11 +57,13 @@ async function loginUser(email, password) {
 // El alta desde la interfaz crea SIEMPRE un montador (el disparador
 // handle_new_user en la base de datos asigna el rol 'montador'). Promocionar a
 // 'admin' o 'almacen' es una operación manual en la consola (ver README.md).
-async function registerUser(nombre, email, password) {
+// empresaId: empresa cliente elegida en el registro. handle_new_user la guarda
+// en profiles.empresa_id solo si existe y está activa (EMPRESAS.sql).
+async function registerUser(nombre, email, password, empresaId) {
   const { error } = await _db.auth.signUp({
     email: email.trim().toLowerCase(),
     password,
-    options: { data: { nombre: nombre.trim() } },
+    options: { data: { nombre: nombre.trim(), empresa_id: empresaId != null ? String(empresaId) : null } },
   });
   if (error) throw new Error(traducirAuthError(error.message));
   const u = await getSessionUser();

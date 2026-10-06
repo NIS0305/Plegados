@@ -66,6 +66,13 @@
           <span class="error-msg" id="err-regNombre"></span>
         </div>
         <div class="form-group">
+          <label for="regEmpresa">Empresa</label>
+          <select id="regEmpresa" required disabled>
+            <option value="">Cargando empresas…</option>
+          </select>
+          <span class="error-msg" id="err-regEmpresa"></span>
+        </div>
+        <div class="form-group">
           <label for="regEmail">Email</label>
           <input type="email" id="regEmail" placeholder="tu@email.com" required />
           <span class="error-msg" id="err-regEmail"></span>
@@ -146,6 +153,31 @@
       }
     });
 
+    // EMPRESAS del registro (RPC empresas_registro: solo id + nombre de las activas).
+    // Sin empresas no se puede crear cuenta: el taller tiene que darlas de alta.
+    let empresasOk = false;
+    const MSG_EMPRESAS = 'No se pudo cargar la lista de empresas. Avisa al taller.';
+    (async () => {
+      const sel = document.getElementById('regEmpresa');
+      try {
+        const lista = await getEmpresasRegistro();
+        if (!lista.length) throw new Error('sin empresas');
+        sel.innerHTML = '<option value="">Elige tu empresa</option>' +
+          lista.map(e => `<option value="${e.id}">${escHtmlLogin(e.nombre)}</option>`).join('');
+        sel.disabled = false;
+        empresasOk = true;
+      } catch (err) {
+        console.error('empresas_registro:', err);
+        sel.innerHTML = '<option value="">Sin empresas disponibles</option>';
+        document.getElementById('err-regEmpresa').textContent = MSG_EMPRESAS;
+        document.getElementById('registerBtn').disabled = true;
+      }
+    })();
+    function escHtmlLogin(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    document.getElementById('regEmpresa').addEventListener('change', () => {
+      if (empresasOk) document.getElementById('err-regEmpresa').textContent = '';
+    });
+
     // REGISTER
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -153,6 +185,7 @@
       const email      = document.getElementById('regEmail').value.trim();
       const pass       = document.getElementById('regPassword').value;
       const pass2      = document.getElementById('regPassword2').value;
+      const empresaId  = document.getElementById('regEmpresa').value;
       const errEl      = document.getElementById('registerError');
       const btn        = document.getElementById('registerBtn');
       let ok = true;
@@ -161,9 +194,12 @@
       const setErr = (id, msg) => { document.getElementById(id).textContent = msg; ok = false; };
 
       ['err-regNombre','err-regEmail','err-regPassword','err-regPassword2'].forEach(clear);
+      if (empresasOk) clear('err-regEmpresa');
       errEl.textContent = '';
 
       if (!nombre) setErr('err-regNombre', 'Ingresa tu nombre');
+      if (!empresasOk) setErr('err-regEmpresa', MSG_EMPRESAS);
+      else if (!empresaId) setErr('err-regEmpresa', 'Elige tu empresa');
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) setErr('err-regEmail', 'Ingresa un email válido');
       if (pass.length < 6) setErr('err-regPassword', 'Mínimo 6 caracteres');
       if (pass !== pass2) setErr('err-regPassword2', 'Las contraseñas no coinciden');
@@ -171,7 +207,7 @@
 
       btn.disabled = true; btn.textContent = 'Creando cuenta...';
       try {
-        const user = await registerUser(nombre, email, pass);
+        const user = await registerUser(nombre, email, pass, Number(empresaId));
         window.location.href = ['admin','almacen'].includes(user.role) ? 'dashboard.html' : 'index.html';
       } catch (err) {
         errEl.textContent = err.message;

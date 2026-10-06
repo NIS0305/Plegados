@@ -113,6 +113,14 @@ ejecutar en el SQL Editor, en este orden:
 Solo el taller (roles `admin` y `almacen`) puede cerrar un chat, desde la
 sección «Chats» del dashboard; al cerrarlo se borran sus mensajes e imágenes.
 
+### Empresas cliente
+
+Cada montador pertenece a una empresa (la elige al registrarse) y cada pedido
+guarda la suya; la facturación se hace fuera de la app (no hay precios).
+Ejecutar `EMPRESAS.sql` antes de desplegar. El taller gestiona las empresas
+(alta, renombrar, activar/desactivar) y la empresa de cada montador desde el
+dashboard. El historial filtra por empresa y exporta el CSV con esa columna.
+
 ### Datos de prueba
 
 La antigua página `seed.html` se eliminó: contenía credenciales de demostración

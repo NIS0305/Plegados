@@ -41,6 +41,7 @@ function rowToPedido(r) {
     etiquetaPath:r.etiqueta_path,
     origen:      r.origen,
     archivos:    Array.isArray(r.archivos) ? r.archivos : [],
+    empresaId:   r.empresa_id ?? null,   // EMPRESAS.sql; la fija un disparador al crear
   };
 }
 
@@ -132,8 +133,70 @@ async function getDbUsers() {
     nombre:   r.nombre,
     email:    '',
     role:     r.role,
+    empresaId: r.empresa_id ?? null,
     creadoEl: r.creado_el ? new Date(r.creado_el).toLocaleDateString('es-ES') : '',
   }));
+}
+
+// ── Empresas (EMPRESAS.sql) ───────────────────────────────────────────────────
+// Empresa cliente de cada montador y de cada pedido. Sin precios: la
+// facturación se hace fuera de la app. Las reglas las impone la BD.
+
+// Pantalla de registro (sin sesión): solo id + nombre de las activas.
+async function getEmpresasRegistro() {
+  const { data, error } = await _db.rpc('empresas_registro');
+  if (error) throw error;
+  return data || [];
+}
+
+// Taller: todas (activas e inactivas). [] si la tabla aún no existe.
+async function getEmpresas() {
+  const { data, error } = await _db.from('empresas').select('id, nombre, activa, creado_el').order('nombre');
+  if (error) { console.error('getEmpresas:', error); return []; }
+  return data || [];
+}
+
+function traducirErrorEmpresa(error) {
+  if (error && error.code === '23505') return new Error('Ya existe una empresa con ese nombre.');
+  if (error && error.code === '23514') return new Error('El nombre no puede estar vacío.');
+  return error;
+}
+
+async function crearEmpresa(nombre) {
+  const { data, error } = await _db.from('empresas').insert({ nombre: nombre.trim() }).select().single();
+  if (error) throw traducirErrorEmpresa(error);
+  return data;
+}
+
+// Renombrar / activar / desactivar. RLS deniega en silencio (0 filas): se comprueba.
+async function actualizarEmpresa(id, campos) {
+  const db = {};
+  if (campos.nombre !== undefined) db.nombre = campos.nombre.trim();
+  if (campos.activa !== undefined) db.activa = campos.activa;
+  const { data, error } = await _db.from('empresas').update(db).eq('id', id).select('id');
+  if (error) throw traducirErrorEmpresa(error);
+  if (!data || !data.length) throw new Error('No tienes permiso para cambiar esta empresa.');
+}
+
+// Taller: empresa de un usuario (RPC; profiles no admite UPDATE por API).
+// No toca sus pedidos anteriores: cada pedido guarda la suya.
+async function asignarEmpresaUsuario(userId, empresaId) {
+  const { error } = await _db.rpc('asignar_empresa_usuario', { p_user: userId, p_empresa_id: empresaId });
+  if (error) throw error;
+}
+
+// Taller: empresa de un pedido (p. ej. correo o almacén sin empresa).
+async function actualizarEmpresaPedido(pedidoId, empresaId) {
+  const { data, error } = await _db.from('pedidos').update({ empresa_id: empresaId }).eq('id', pedidoId).select('id');
+  if (error) throw error;
+  if (!data || !data.length) throw new Error('No se pudo cambiar la empresa del pedido.');
+}
+
+// Montador: nombre de su empresa (null si no tiene o si aún no existe la columna).
+async function getMiEmpresa(userId) {
+  const { data, error } = await _db.from('profiles').select('empresa_id, empresas(nombre)').eq('id', userId).maybeSingle();
+  if (error || !data) return null;
+  return data.empresas ? data.empresas.nombre : null;
 }
 
 // ── Storage ───────────────────────────────────────────────────────────────────

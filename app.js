@@ -110,6 +110,7 @@ function openModal(pedido) {
       </div>
       <div class="detail">
         ${row('Solicitante', `${escHtml(pedido.montador)} ${origen}`)}
+        ${typeof window.htmlEmpresaModal === 'function' ? window.htmlEmpresaModal(pedido) : ''}
         ${row('Fecha', escHtml(pedido.fecha))}
         ${row('Estado', `<span class="badge ${badgeClass(pedido.estado)}">${escHtml(pedido.estado)}</span>`)}
         ${row('Cantidad', `${escHtml(pedido.cantidad)} ${Number(pedido.cantidad) === 1 ? 'pieza' : 'piezas'}`)}
@@ -225,6 +226,13 @@ if (mApp) (async () => {
   $('mNombre').textContent   = currentUser.nombre;
   $('mIniciales').textContent = ((partes[0] || '?')[0] + (partes[1] ? partes[1][0] : '')).toUpperCase();
   $('mRol').textContent = currentUser.role === 'admin' ? 'ADMIN' : currentUser.role === 'almacen' ? 'ALMACÉN' : 'MONTADOR';
+  // Empresa del perfil, solo lectura ("MONTADOR · <EMPRESA>"). Sin empresa no
+  // se bloquea nada: sus pedidos quedan sin empresa y el taller los asigna.
+  getMiEmpresa(currentUser.id).then(nombre => {
+    if (!nombre) return;
+    $('mRol').textContent += ' · ' + nombre.toUpperCase();
+    $('mRol').title = nombre;
+  });
   $('mMontadorChip').textContent = String(currentUser.nombre || '').toUpperCase();
   $('logoutBtn').addEventListener('click', logout);
   if (['admin', 'almacen'].includes(currentUser.role)) $('mDashLink').hidden = false;

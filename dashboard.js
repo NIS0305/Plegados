@@ -52,6 +52,34 @@ const state = {
 
 let allPedidos = [];
 let allUsers   = [];
+let allEmpresas = [];   // EMPRESAS.sql: [{ id, nombre, activa }]. Sin precios.
+
+// ─── Empresas: utilidades compartidas ────────────────────────────────────────
+function nombreEmpresa(id) {
+  if (id == null) return '';
+  const e = allEmpresas.find(x => x.id === Number(id));
+  return e ? e.nombre : '';
+}
+// <option>s para ASIGNAR empresa: "Sin empresa" + activas (+ la actual aunque esté inactiva).
+function opcionesEmpresa(actual) {
+  const lista = allEmpresas.filter(e => e.activa || e.id === Number(actual));
+  return `<option value=""${actual == null ? ' selected' : ''}>Sin empresa</option>` +
+    lista.map(e => `<option value="${e.id}"${e.id === Number(actual) ? ' selected' : ''}>${escHtml(e.nombre)}${e.activa ? '' : ' (inactiva)'}</option>`).join('');
+}
+// Filtros por empresa: '' = todas, 'sin' = sin empresa, o el id.
+function pasaFiltroEmpresa(p, f) {
+  if (!f) return true;
+  if (f === 'sin') return p.empresaId == null;
+  return p.empresaId === Number(f);
+}
+function opcionesFiltroEmpresa(actual) {
+  return `<option value="">Todas</option><option value="sin"${actual === 'sin' ? ' selected' : ''}>Sin empresa</option>` +
+    allEmpresas.map(e => `<option value="${e.id}"${String(e.id) === String(actual) ? ' selected' : ''}>${escHtml(e.nombre)}${e.activa ? '' : ' (inactiva)'}</option>`).join('');
+}
+function slugArchivo(t) {
+  return String(t).normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'empresa';
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function parseFecha(str) {
@@ -286,7 +314,7 @@ function updateSortHeaders() {
 
 // ─── Main render ─────────────────────────────────────────────────────────────
 async function loadAndRender() {
-  [allPedidos, allUsers] = await Promise.all([getPedidos(), getDbUsers()]);
+  [allPedidos, allUsers, allEmpresas] = await Promise.all([getPedidos(), getDbUsers(), getEmpresas()]);
   populateDropdowns();
   renderAll();
 }
@@ -301,6 +329,8 @@ function renderAll() {
   try { renderTablero(); }            catch(e) { console.error('renderTablero:', e); }
   try { renderHistorial(); }          catch(e) { console.error('renderHistorial:', e); }
   try { tPintarLista(); }             catch(e) { console.error('tPintarLista:', e); }
+  // Sin repintar mientras se renombra una empresa (perdería lo escrito).
+  if (empEditando == null) { try { renderEmpresas(); } catch(e) { console.error('renderEmpresas:', e); } }
 }
 
 // ─── Events ──────────────────────────────────────────────────────────────────
@@ -386,9 +416,9 @@ document.getElementById('clearAllBtn').addEventListener('click', async () => {
 
 document.getElementById('exportCsv').addEventListener('click', () => {
   const list    = sortList(getFiltered());
-  const headers = ['ID','Montador','Fecha','Cantidad','Cristal Fijo','Referencia','RAL','Estado','Notas','Nota Taller'];
+  const headers = ['ID','Montador','Fecha','Empresa','Cantidad','Cristal Fijo','Referencia','RAL','Estado','Notas','Nota Taller'];
   const rows    = list.map(p => [
-    p.id, p.montador, p.fecha, p.cantidad, p.cristalFijo ?? '',
+    p.id, p.montador, p.fecha, nombreEmpresa(p.empresaId), p.cantidad, p.cristalFijo ?? '',
     p.referencia || '', p.ral || '', p.estado, p.notas || '', p.notaAdmin || '',
   ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
   const csv = [headers.join(','), ...rows].join('\n');
@@ -402,7 +432,7 @@ document.getElementById('exportCsv').addEventListener('click', () => {
 // Montadores, almacén y correo. Por hacer = no finalizados (Pendiente, En
 // taller); Finalizados = esFinalizado() (supabase.js). Cada pedido sale en UNA
 // sola columna. Filtro rápido por origen: Todos / Montadores / Almacén / Correo.
-const tableroState = { origen: 'todos' };
+const tableroState = { origen: 'todos', empresa: '' };   // empresa: '' | 'sin' | id
 
 // Origen del pedido: 'correo' (n8n, origen = 'email'), 'almacen' (cuenta con
 // rol almacén) o 'montador' (cualquier otra cuenta).
@@ -414,10 +444,15 @@ function almacenIdsActuales() {
   return new Set(allUsers.filter(u => u.role === 'almacen').map(u => u.id));
 }
 
+// Pedidos del filtro de empresa (antes del de origen: los contadores de origen lo respetan).
+function tableroPorEmpresa() {
+  return allPedidos.filter(p => pasaFiltroEmpresa(p, tableroState.empresa));
+}
 function getTableroPedidos() {
   const almacenIds = almacenIdsActuales();
   const f = tableroState.origen;
-  return f === 'todos' ? allPedidos.slice() : allPedidos.filter(p => origenPedido(p, almacenIds) === f);
+  const base = tableroPorEmpresa();
+  return f === 'todos' ? base : base.filter(p => origenPedido(p, almacenIds) === f);
 }
 
 // Por hacer: lo que más lleva esperando, arriba. Finalizados: lo más reciente arriba.
@@ -430,16 +465,17 @@ document.getElementById('exportCsvAlmacen').addEventListener('click', (e) => {
   const almacenIds = almacenIdsActuales();
   const NOMBRE_ORIGEN = { montador: 'Montador', almacen: 'Almacén', correo: 'Correo' };
   const list    = getTableroPedidos().sort(ordenTablero);
-  const headers = ['ID','Solicitante','Fecha','Referencia','RAL','Cantidad','Estado','Columna','Origen','Notas','Nota Taller'];
+  const headers = ['ID','Solicitante','Fecha','Empresa','Referencia','RAL','Cantidad','Estado','Columna','Origen','Notas','Nota Taller'];
   const rows    = list.map(p => [
-    p.id, p.montador, p.fecha, p.referencia || '', p.ral || '', p.cantidad,
+    p.id, p.montador, p.fecha, nombreEmpresa(p.empresaId), p.referencia || '', p.ral || '', p.cantidad,
     p.estado, esFinalizado(p.estado) ? 'Finalizado' : 'Por hacer',
     NOMBRE_ORIGEN[origenPedido(p, almacenIds)], p.notas || '', p.notaAdmin || '',
   ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
   const csv = [headers.join(','), ...rows].join('\n');
   const a   = document.createElement('a');
-  a.href    = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `tablero_${tableroState.origen}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.href    = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+  const emp = tableroState.empresa === 'sin' ? 'sin-empresa' : tableroState.empresa ? slugArchivo(nombreEmpresa(tableroState.empresa)) : 'todas';
+  a.download = `tablero_${tableroState.origen}_${emp}_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 });
 
@@ -457,11 +493,14 @@ function filaTablero(p, almacenIds) {
         : `<button class="ico" data-action="ver" data-id="${p.id}" title="${escHtml(p.fileName)}">📄</button>`)
     : '';
   const org      = origenPedido(p, almacenIds);
-  const origen   = org === 'correo'
-    ? '<span class="tag email" title="Pedido recibido por correo">Correo</span>'
-    : org === 'almacen'
-      ? '<span class="tag mont">Almacén</span>'
-      : `<span class="tag montador">Montador · ${escHtml(p.montador || '—')}</span>`;
+  const empresa  = nombreEmpresa(p.empresaId);
+  // Montador: "Empresa · Montador". Correo/almacén: su origen + la empresa (o "Sin empresa").
+  const origen   = org === 'montador'
+    ? `<span class="tag montador${empresa ? '' : ' sinemp'}" title="${empresa ? 'Empresa · montador' : 'Pedido sin empresa: asígnala en el detalle'}">${escHtml(empresa || 'Sin empresa')} · ${escHtml(p.montador || '—')}</span>`
+    : (org === 'correo'
+        ? '<span class="tag email" title="Pedido recibido por correo">Correo</span>'
+        : '<span class="tag mont">Almacén</span>') +
+      (empresa ? ` <span class="tag emp">${escHtml(empresa)}</span>` : ' <span class="tag sinemp" title="Asígnala en el detalle del pedido">Sin empresa</span>');
   const chat     = typeof tchat !== 'undefined' ? tchat.chats.find(c => c.pedidoId === p.id) : null;
   const chatTag  = chat
     ? `<button type="button" class="tag chat${chat.noLeidosTaller ? ' nuevo' : ''}" data-action="chat" data-id="${p.id}" title="${chat.noLeidosTaller ? 'Mensajes nuevos del montador' : 'Abrir chat'}">${chat.noLeidosTaller ? '<span class="tdot"></span>' : ''}Chat</button>`
@@ -510,9 +549,12 @@ function renderTablero() {
   renderColumnaTablero('almacenBody', 'almacenCount', porHacer, 'Nada pendiente', almacenIds);
   renderColumnaTablero('almacenHistBody', 'almacenHistCount', finalizados, 'Sin pedidos finalizados', almacenIds);
 
-  // Filtro rápido con contadores por origen.
-  const cuenta = { todos: allPedidos.length, montador: 0, almacen: 0, correo: 0 };
-  allPedidos.forEach(p => { cuenta[origenPedido(p, almacenIds)]++; });
+  // Filtro rápido con contadores por origen (dentro de la empresa elegida).
+  const base = tableroPorEmpresa();
+  const cuenta = { todos: base.length, montador: 0, almacen: 0, correo: 0 };
+  base.forEach(p => { cuenta[origenPedido(p, almacenIds)]++; });
+  const selEmp = document.getElementById('tableroEmpresa');
+  if (selEmp) selEmp.innerHTML = opcionesFiltroEmpresa(tableroState.empresa);
   document.querySelectorAll('[data-tablero-origen]').forEach(b => {
     const k = b.dataset.tableroOrigen;
     b.classList.toggle('on', k === tableroState.origen);
@@ -521,6 +563,11 @@ function renderTablero() {
     if (n) n.textContent = cuenta[k];
   });
 }
+
+document.getElementById('tableroEmpresa').addEventListener('change', (e) => {
+  tableroState.empresa = e.target.value;
+  renderTablero();
+});
 
 document.getElementById('tableroFiltro').addEventListener('click', (e) => {
   const b = e.target.closest('[data-tablero-origen]');
@@ -588,14 +635,49 @@ async function onAlmacenChange(e) {
   t.addEventListener('change', onAlmacenChange);
 });
 
+// ─── Empresa en el detalle del pedido (modal de app.js) ──────────────────────
+// Fila "Empresa" con desplegable para cambiarla (p. ej. pedidos por correo o de
+// almacén, que entran sin empresa). Si no hay empresas, no se muestra.
+window.htmlEmpresaModal = (p) => {
+  if (!allEmpresas.length) return '';
+  return `<div class="row"><span class="k">Empresa</span><span class="v">
+    <label for="modalEmpresa" class="m-sr">Empresa del pedido</label>
+    <select id="modalEmpresa" class="emp-select" data-id="${p.id}">${opcionesEmpresa(p.empresaId)}</select>
+  </span></div>`;
+};
+
+document.addEventListener('change', async (e) => {
+  const sel = e.target.closest('#modalEmpresa');
+  if (!sel) return;
+  const id = Number(sel.dataset.id);
+  const p  = allPedidos.find(x => x.id === id);
+  if (!p) return;
+  const antes = p.empresaId;
+  const nueva = sel.value ? Number(sel.value) : null;
+  sel.disabled = true;
+  try {
+    await actualizarEmpresaPedido(id, nueva);
+    p.empresaId = nueva;
+    renderAll();
+    showToast(`Empresa del pedido: ${nombreEmpresa(nueva) || 'Sin empresa'}`);
+  } catch (err) {
+    console.error('empresa del pedido:', err);
+    sel.value = antes == null ? '' : String(antes);
+    showToast('No se pudo cambiar la empresa: ' + (err.message || err), 4000);
+  } finally {
+    sel.disabled = false;
+  }
+});
+
 // ─── Users ────────────────────────────────────────────────────────────────────
 async function renderUsers() {
   const users = await getDbUsers();
+  if (users.length) allUsers = users;
   const tbody = document.getElementById('usersBody');
   document.getElementById('usersCount').textContent = `${users.length} usuario${users.length !== 1 ? 's' : ''}`;
 
   if (!users.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">No hay usuarios registrados</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">No hay usuarios registrados</td></tr>`;
     return;
   }
   tbody.innerHTML = users.map(u => {
@@ -609,6 +691,9 @@ async function renderUsers() {
       <td><strong>${escHtml(u.nombre)}</strong></td>
       <td>${escHtml(u.email)}</td>
       <td>${rolBadge}</td>
+      <td>${u.role === 'montador' && allEmpresas.length
+        ? `<select class="emp-select" data-uid="${escHtml(u.id)}" data-actual="${u.empresaId ?? ''}" aria-label="Empresa de ${escHtml(u.nombre)}">${opcionesEmpresa(u.empresaId)}</select>`
+        : `<span class="td-sm">${escHtml(nombreEmpresa(u.empresaId)) || '—'}</span>`}</td>
       <td class="td-sm">${escHtml(u.creadoEl || '—')}</td>
       <td style="text-align:center">${count}</td>
       <td>${BORRADO_HABILITADO ? `<button class="icon-btn del" data-action="del-user" data-id="${u.id}" title="Eliminar usuario">🗑️</button>` : '<span class="td-sm" style="color:var(--text-muted)" title="Baja de usuarios: operación manual en base de datos (ver README.md)">—</span>'}</td>
@@ -622,6 +707,145 @@ document.getElementById('usersToggle').addEventListener('click', () => {
   const open    = panel.style.display === 'none';
   panel.style.display     = open ? '' : 'none';
   chevron.style.transform = open ? 'rotate(90deg)' : '';
+});
+
+// Empresa de un montador: confirmación + RPC asignar_empresa_usuario. Sus
+// pedidos anteriores NO cambian (cada pedido guarda su empresa).
+document.getElementById('usersBody').addEventListener('change', async (e) => {
+  const sel = e.target.closest('select[data-uid]');
+  if (!sel) return;
+  const u = allUsers.find(x => x.id === sel.dataset.uid);
+  const actual = sel.dataset.actual;
+  const nueva  = sel.value ? Number(sel.value) : null;
+  const texto  = nombreEmpresa(nueva) || 'Sin empresa';
+  if (!confirm(`¿Cambiar la empresa de ${u ? u.nombre : 'este usuario'} a «${texto}»?\n\nSus pedidos anteriores conservan la empresa que tenían; los nuevos irán con «${texto}».`)) {
+    sel.value = actual;
+    return;
+  }
+  sel.disabled = true;
+  try {
+    await asignarEmpresaUsuario(sel.dataset.uid, nueva);
+    await renderUsers();
+    renderEmpresas();
+    showToast(`Empresa de ${u ? u.nombre : 'usuario'}: ${texto}`);
+  } catch (err) {
+    console.error('asignar empresa:', err);
+    sel.value = actual;
+    sel.disabled = false;
+    showToast('No se pudo cambiar la empresa: ' + (err.message || err), 4000);
+  }
+});
+
+// ─── Empresas (alta, renombrar, activar/desactivar; nunca se borran) ─────────
+let empEditando = null;   // id de la empresa que se está renombrando
+
+function renderEmpresas() {
+  const tbody = document.getElementById('empresasBody');
+  if (!tbody) return;
+  const activas = allEmpresas.filter(e => e.activa).length;
+  document.getElementById('empresasCount').textContent =
+    `${allEmpresas.length} empresa${allEmpresas.length !== 1 ? 's' : ''}${allEmpresas.length ? ` · ${activas} activa${activas !== 1 ? 's' : ''}` : ''}`;
+  const montadores = allUsers.filter(u => u.role === 'montador');
+  const fila = (e) => {
+    const nM = montadores.filter(u => u.empresaId === e.id).length;
+    const nP = allPedidos.filter(p => p.empresaId === e.id).length;
+    const nombre = empEditando === e.id
+      ? `<form class="emp-rename" data-emp-form="${e.id}"><label class="m-sr" for="empNombre${e.id}">Nuevo nombre</label><input type="text" id="empNombre${e.id}" value="${escHtml(e.nombre)}" maxlength="120" />
+           <button type="submit" class="btn btn-primary btn-sm">Guardar</button><button type="button" class="btn btn-secondary btn-sm" data-emp-cancel>Cancelar</button></form>`
+      : `<strong>${escHtml(e.nombre)}</strong>`;
+    return `<tr${e.activa ? '' : ' class="emp-inactiva"'}>
+      <td>${nombre}</td>
+      <td>${e.activa ? '<span class="badge badge-green">Activa</span>' : '<span class="badge badge-gray">Inactiva</span>'}</td>
+      <td style="text-align:center">${nM}</td>
+      <td style="text-align:center">${nP}</td>
+      <td><div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${empEditando === e.id ? '' : `<button type="button" class="btn btn-secondary btn-sm" data-emp-renombrar="${e.id}">Renombrar</button>`}
+        <button type="button" class="btn btn-secondary btn-sm" data-emp-activa="${e.id}" data-valor="${e.activa ? '0' : '1'}">${e.activa ? 'Desactivar' : 'Activar'}</button>
+      </div></td>
+    </tr>`;
+  };
+  const sinM = montadores.filter(u => u.empresaId == null).length;
+  const sinP = allPedidos.filter(p => p.empresaId == null).length;
+  tbody.innerHTML = (allEmpresas.length
+      ? allEmpresas.map(fila).join('')
+      : `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-muted)">Aún no hay empresas. Añade la primera: sin empresas activas los montadores no pueden registrarse.</td></tr>`) +
+    `<tr class="emp-sin"><td><em>Sin empresa</em></td><td class="td-sm">—</td><td style="text-align:center">${sinM}</td><td style="text-align:center">${sinP}</td>
+      <td class="td-sm">Asigna desde Usuarios o desde el detalle del pedido</td></tr>`;
+  if (empEditando != null) {
+    const inp = document.getElementById('empNombre' + empEditando);
+    if (inp) { inp.focus(); inp.select(); }
+  }
+}
+
+async function recargarEmpresas() {
+  allEmpresas = await getEmpresas();
+  renderAll();
+  renderUsers();
+}
+
+document.getElementById('empresasToggle').addEventListener('click', () => {
+  const panel   = document.getElementById('empresasCollapsible');
+  const chevron = document.getElementById('empresasChevron');
+  const open    = panel.style.display === 'none';
+  panel.style.display     = open ? '' : 'none';
+  chevron.style.transform = open ? 'rotate(90deg)' : '';
+});
+
+document.getElementById('empresaNuevaForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const inp = document.getElementById('empresaNuevaNombre');
+  const nombre = inp.value.trim();
+  if (!nombre) { showToast('Escribe el nombre de la empresa.'); inp.focus(); return; }
+  try {
+    await crearEmpresa(nombre);
+    inp.value = '';
+    await recargarEmpresas();
+    showToast(`Empresa «${nombre}» añadida.`);
+  } catch (err) {
+    console.error('crear empresa:', err);
+    showToast('No se pudo añadir: ' + (err.message || err), 4000);
+  }
+});
+
+document.getElementById('empresasBody').addEventListener('click', async (e) => {
+  const ren = e.target.closest('[data-emp-renombrar]');
+  if (ren) { empEditando = Number(ren.dataset.empRenombrar); renderEmpresas(); return; }
+  if (e.target.closest('[data-emp-cancel]')) { empEditando = null; renderEmpresas(); return; }
+  const act = e.target.closest('[data-emp-activa]');
+  if (act) {
+    const id = Number(act.dataset.empActiva);
+    const activar = act.dataset.valor === '1';
+    const nombre = nombreEmpresa(id);
+    if (!activar && !confirm(`¿Desactivar «${nombre}»?\n\nNo saldrá en el registro de nuevos montadores. Sus montadores y pedidos se conservan.`)) return;
+    act.disabled = true;
+    try {
+      await actualizarEmpresa(id, { activa: activar });
+      await recargarEmpresas();
+      showToast(`«${nombre}» ${activar ? 'activada' : 'desactivada'}.`);
+    } catch (err) {
+      console.error('activar empresa:', err);
+      act.disabled = false;
+      showToast('No se pudo cambiar: ' + (err.message || err), 4000);
+    }
+  }
+});
+
+document.getElementById('empresasBody').addEventListener('submit', async (e) => {
+  const form = e.target.closest('[data-emp-form]');
+  if (!form) return;
+  e.preventDefault();
+  const id = Number(form.dataset.empForm);
+  const nombre = form.querySelector('input').value.trim();
+  if (!nombre) { showToast('El nombre no puede estar vacío.'); return; }
+  try {
+    await actualizarEmpresa(id, { nombre });
+    empEditando = null;
+    await recargarEmpresas();
+    showToast(`Empresa renombrada a «${nombre}».`);
+  } catch (err) {
+    console.error('renombrar empresa:', err);
+    showToast('No se pudo renombrar: ' + (err.message || err), 4000);
+  }
 });
 
 // Baja de usuarios: se gestiona en Supabase Auth (consola / API de administración),
@@ -702,11 +926,11 @@ document.getElementById('ordersTable').addEventListener('click', e => {
 // ─── HISTORIAL (registro completo, filtrable y exportable) ───────────────────
 // Registro de TODOS los pedidos (montadores + almacén) para sacar listados por
 // periodo y facturar aparte. SIN precios. Filtros combinados (AND): rango de
-// fechas (con atajos), montador, cliente/referencia y estado. Reutiliza
+// fechas (con atajos), montador, empresa, cliente/referencia y estado. Reutiliza
 // parseFecha(), la semántica desde/hasta de getFiltered() y la técnica de CSV
 // de #exportCsv / #exportCsvAlmacen. Se re-renderiza desde renderAll(), así que
 // se mantiene al día con los filtros y con Realtime (subscribePedidos).
-const histState = { desde: '', hasta: '', montador: '', cliente: '', estado: '' };
+const histState = { desde: '', hasta: '', montador: '', empresa: '', cliente: '', estado: '' };   // empresa: '' | 'sin' | id
 
 function histAlmacenIds() {
   return new Set(allUsers.filter(u => u.role === 'almacen').map(u => u.id));
@@ -715,6 +939,7 @@ function histAlmacenIds() {
 function getHistorialFiltrado() {
   let list = allPedidos; // montadores + almacén, todo
   if (histState.montador) list = list.filter(p => p.montador === histState.montador);
+  if (histState.empresa)  list = list.filter(p => pasaFiltroEmpresa(p, histState.empresa));
   if (histState.estado)   list = list.filter(p => p.estado   === histState.estado);
   if (histState.desde)    list = list.filter(p => parseFecha(p.fecha) >= new Date(histState.desde));
   if (histState.hasta)    list = list.filter(p => parseFecha(p.fecha) <= new Date(histState.hasta + 'T23:59:59'));
@@ -737,6 +962,7 @@ function histFila(p, almacenIds) {
   return {
     id:         p.id,
     fecha:      p.fecha || '',
+    empresa:    nombreEmpresa(p.empresaId),          // '' = sin empresa
     referencia: p.referencia || '',
     cliente:    p.montador || '',                   // solicitante
     montador:   esAlmacen ? '' : (p.montador || ''),
@@ -760,13 +986,15 @@ function renderHistorial() {
   const tbody = document.getElementById('histBody');
   if (!tbody) return;
   populateHistMontadores();
+  const selEmp = document.getElementById('histEmpresa');
+  if (selEmp) selEmp.innerHTML = opcionesFiltroEmpresa(histState.empresa);
   const almacenIds = histAlmacenIds();
   const list = getHistorialFiltrado();
   const countEl = document.getElementById('histCount');
   if (countEl) countEl.textContent = `${list.length} resultado${list.length !== 1 ? 's' : ''}`;
 
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">No hay pedidos con esos filtros</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">No hay pedidos con esos filtros</td></tr>`;
     return;
   }
   tbody.innerHTML = list.map(p => {
@@ -774,6 +1002,7 @@ function renderHistorial() {
     return `<tr>
       <td class="td-id">#${r.id}</td>
       <td class="td-sm">${escHtml(r.fecha)}</td>
+      <td>${r.empresa ? escHtml(r.empresa) : '<span class="td-sm" style="color:var(--text-muted)">Sin empresa</span>'}</td>
       <td>${escHtml(r.referencia) || '—'}</td>
       <td><strong>${escHtml(r.cliente) || '—'}</strong></td>
       <td class="td-sm">${escHtml(r.montador) || '—'}</td>
@@ -801,8 +1030,9 @@ const HIST_PRESETS = {
   histPresetMes:       () => { const h = new Date(); histSetRango(histYmd(new Date(h.getFullYear(), h.getMonth(), 1)), histYmd(h)); },
   histPresetMesPasado: () => { const h = new Date(); histSetRango(histYmd(new Date(h.getFullYear(), h.getMonth() - 1, 1)), histYmd(new Date(h.getFullYear(), h.getMonth(), 0))); },
   histPresetTodo:      () => {
-    histState.montador = ''; histState.cliente = ''; histState.estado = '';
+    histState.montador = ''; histState.empresa = ''; histState.cliente = ''; histState.estado = '';
     document.getElementById('histMontador').value = '';
+    document.getElementById('histEmpresa').value  = '';
     document.getElementById('histCliente').value  = '';
     document.getElementById('histEstado').value   = '';
     histSetRango('', '');
@@ -815,25 +1045,26 @@ Object.entries(HIST_PRESETS).forEach(([id, fn]) => {
 document.getElementById('histDesde').addEventListener('change',    e => { histState.desde    = e.target.value; renderHistorial(); });
 document.getElementById('histHasta').addEventListener('change',    e => { histState.hasta    = e.target.value; renderHistorial(); });
 document.getElementById('histMontador').addEventListener('change', e => { histState.montador = e.target.value; renderHistorial(); });
+document.getElementById('histEmpresa').addEventListener('change',  e => { histState.empresa  = e.target.value; renderHistorial(); });
 document.getElementById('histCliente').addEventListener('input',   e => { histState.cliente  = e.target.value.trim(); renderHistorial(); });
 document.getElementById('histEstado').addEventListener('change',   e => { histState.estado   = e.target.value; renderHistorial(); });
 
 // CSV del historial: EXACTAMENTE el conjunto filtrado, misma técnica (BOM +
-// comillas dobladas + coma). Nombre con el rango si lo hay.
+// comillas dobladas + coma). Nombre con la empresa y el rango.
 document.getElementById('exportCsvHistorial').addEventListener('click', () => {
   const almacenIds = histAlmacenIds();
   const list    = getHistorialFiltrado().map(p => histFila(p, almacenIds));
-  const headers = ['ID','Fecha','Referencia','Cliente/Solicitante','Montador','Cantidad','Estado','Origen'];
+  const headers = ['ID','Fecha','Empresa','Referencia','Cliente/Solicitante','Montador','Cantidad','Estado','Origen'];
   const rows    = list.map(r => [
-    r.id, r.fecha, r.referencia, r.cliente, r.montador, r.cantidad, r.estado, r.origen,
+    r.id, r.fecha, r.empresa, r.referencia, r.cliente, r.montador, r.cantidad, r.estado, r.origen,
   ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
   const csv = [headers.join(','), ...rows].join('\n');
   const a   = document.createElement('a');
   a.href    = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
-  const rango = (histState.desde || histState.hasta)
-    ? `${histState.desde || 'inicio'}_${histState.hasta || 'hoy'}`
-    : new Date().toISOString().slice(0, 10);
-  a.download = `historial_${rango}.csv`;
+  // historial_<empresa>_<desde>_<hasta>.csv (empresa: todas / sin-empresa / nombre).
+  const emp = histState.empresa === 'sin' ? 'sin-empresa'
+            : histState.empresa ? slugArchivo(nombreEmpresa(histState.empresa)) : 'todas';
+  a.download = `historial_${emp}_${histState.desde || 'inicio'}_${histState.hasta || histYmd(new Date())}.csv`;
   a.click();
 });
 

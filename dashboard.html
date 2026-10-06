@@ -59,6 +59,10 @@
       <button type="button" class="tf" data-tablero-origen="montador" aria-pressed="false">Montadores <span class="n"></span></button>
       <button type="button" class="tf" data-tablero-origen="almacen" aria-pressed="false">Almacén <span class="n"></span></button>
       <button type="button" class="tf" data-tablero-origen="correo" aria-pressed="false">Correo <span class="n"></span></button>
+      <label class="tf-emp">
+        <span class="bi-filter-label">Empresa</span>
+        <select id="tableroEmpresa" class="bi-select"><option value="">Todas</option></select>
+      </label>
     </div>
     <div class="board">
       <!-- POR HACER = Pendiente + En taller (del más antiguo al más nuevo) -->
@@ -222,12 +226,46 @@
                 <th>Nombre</th>
                 <th>Email</th>
                 <th>Rol</th>
+                <th>Empresa</th>
                 <th>Registro</th>
                 <th>Pedidos</th>
                 <th>Acción</th>
               </tr>
             </thead>
             <tbody id="usersBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPRESAS cliente (sin precios: la facturación se hace fuera de la app).
+         Desactivar = no sale en el registro; sus datos se conservan. -->
+    <div class="table-card" style="margin-top:24px">
+      <div class="table-topbar" id="empresasToggle" style="cursor:pointer;user-select:none;margin-bottom:0">
+        <div class="ttl">
+          <h3 class="chart-title cond">Empresas</h3>
+          <span class="table-count" id="empresasCount"></span>
+        </div>
+        <span class="chev" id="empresasChevron">▸</span>
+      </div>
+      <div id="empresasCollapsible" style="display:none">
+        <form class="emp-form" id="empresaNuevaForm" novalidate>
+          <label for="empresaNuevaNombre" class="m-sr">Nombre de la empresa</label>
+          <input type="text" id="empresaNuevaNombre" placeholder="Nombre de la empresa cliente" maxlength="120" autocomplete="off" />
+          <button type="submit" class="btn btn-primary btn-sm">Añadir empresa</button>
+        </form>
+        <div class="table-wrap" style="margin-top:14px">
+          <table class="bi-table" id="empresasTable">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Estado</th>
+                <th>Montadores</th>
+                <th>Pedidos</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="empresasBody"></tbody>
           </table>
         </div>
       </div>
@@ -267,6 +305,10 @@
               <label class="bi-filter-label" for="histMontador">Montador</label>
               <select id="histMontador" class="bi-select"><option value="">Todos</option></select>
             </div>
+            <div class="bi-filter-item">
+              <label class="bi-filter-label" for="histEmpresa">Empresa</label>
+              <select id="histEmpresa" class="bi-select"><option value="">Todas</option></select>
+            </div>
             <div class="bi-filter-item grow">
               <label class="bi-filter-label" for="histCliente">Cliente</label>
               <input type="text" id="histCliente" class="bi-date" placeholder="Solicitante o referencia…" />
@@ -291,6 +333,7 @@
               <tr>
                 <th>#</th>
                 <th>Fecha</th>
+                <th>Empresa</th>
                 <th>Referencia</th>
                 <th>Cliente / Solicitante</th>
                 <th>Montador</th>
