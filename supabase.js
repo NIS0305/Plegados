@@ -5,7 +5,34 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // Rellena con la URL real del nodo Webhook de n8n. Ver INTEGRACION-N8N.md.
 const N8N_ETIQUETA_WEBHOOK = 'https://n8n.tmisystem.com/webhook/generar-etiqueta';
 
-const _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// ── Sesión persistente ────────────────────────────────────────────────────────
+// La sesión vive en localStorage con una clave propia y se renueva sola. Quien
+// entra no vuelve a ver el login salvo que pulse "Salir" (ver auth.js).
+const SUPABASE_STORAGE_KEY = 'tmi-plegados-auth';
+// Clave por defecto de supabase-js hasta ahora: sb-<ref>-auth-token.
+const SUPABASE_STORAGE_KEY_ANTIGUA = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
+
+// Migración silenciosa: quien tenía sesión con la clave antigua la conserva con
+// la nueva (no tiene que volver a poner la contraseña). La antigua se borra
+// para que un "Salir" posterior no deje una copia vieja que se re-migre.
+(function migrarClaveSesion() {
+  try {
+    const antigua = localStorage.getItem(SUPABASE_STORAGE_KEY_ANTIGUA);
+    if (antigua && !localStorage.getItem(SUPABASE_STORAGE_KEY)) {
+      localStorage.setItem(SUPABASE_STORAGE_KEY, antigua);
+    }
+    if (antigua) localStorage.removeItem(SUPABASE_STORAGE_KEY_ANTIGUA);
+  } catch (e) { /* almacenamiento bloqueado: se sigue sin migrar */ }
+})();
+
+const _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    persistSession:     true,
+    autoRefreshToken:   true,
+    detectSessionInUrl: false,
+    storageKey:         SUPABASE_STORAGE_KEY,
+  },
+});
 
 // ── Estados del pedido: definición ÚNICA para toda la app ─────────────────────
 // Valores EXACTOS de la BD (n8n/Telegram escriben 'Completado'); no renombrar.
@@ -192,11 +219,15 @@ async function actualizarEmpresaPedido(pedidoId, empresaId) {
   if (!data || !data.length) throw new Error('No se pudo cambiar la empresa del pedido.');
 }
 
-// Montador: nombre de su empresa (null si no tiene o si aún no existe la columna).
+// Montador: nombre de su empresa. null = no tiene; undefined = no se pudo leer
+// (sin red, o la columna aún no existe): quien llama conserva lo que tenía.
 async function getMiEmpresa(userId) {
-  const { data, error } = await _db.from('profiles').select('empresa_id, empresas(nombre)').eq('id', userId).maybeSingle();
-  if (error || !data) return null;
-  return data.empresas ? data.empresas.nombre : null;
+  try {
+    const { data, error } = await _db.from('profiles').select('empresa_id, empresas(nombre)').eq('id', userId).maybeSingle();
+    if (error) return undefined;
+    if (!data) return null;
+    return data.empresas ? data.empresas.nombre : null;
+  } catch (e) { return undefined; }
 }
 
 // ── Storage ───────────────────────────────────────────────────────────────────

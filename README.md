@@ -121,6 +121,16 @@ Ejecutar `EMPRESAS.sql` antes de desplegar. El taller gestiona las empresas
 (alta, renombrar, activar/desactivar) y la empresa de cada montador desde el
 dashboard. El historial filtra por empresa y exporta el CSV con esa columna.
 
+### Sesión persistente
+
+Quien entra no vuelve a ver el login salvo que pulse «Salir». La sesión vive en
+localStorage (clave `tmi-plegados-auth`; la antigua `sb-<ref>-auth-token` se
+migra sola) y se renueva sola. Sin red, con sesión guardada, la app se abre con
+el perfil cacheado (`tmi-plegados-perfil`) y el aviso «Sin conexión ·
+reintentando…»; al volver la red (evento online, vuelta a primer plano o cada
+12 s) recarga los datos sin recargar la página. Solo se manda al login si no hay
+sesión guardada o el servidor la rechaza (refresh token revocado). Ver auth.js.
+
 ### Datos de prueba
 
 La antigua página `seed.html` se eliminó: contenía credenciales de demostración

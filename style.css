@@ -1006,3 +1006,16 @@ button.tag { border: none; cursor: pointer; font: inherit; font-family: var(--ey
 .bi-table tr.emp-inactiva td { color: var(--ash); }
 .bi-table tr.emp-sin td { color: var(--ink2); background: rgba(255,255,255,.015); }
 @media (max-width: 900px) { .tablero-filtro .tf-emp { margin-left: 0; } }
+
+/* ===== Aviso "Sin conexión · reintentando…" (auth.js, sesión persistente) ===== */
+.aviso-red {
+  position: fixed; top: calc(72px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 120;
+  display: inline-flex; align-items: center; gap: 8px; max-width: calc(100% - 32px);
+  padding: 7px 14px; border-radius: 999px; background: rgba(26,26,24,.96); border: 1px solid rgba(229,176,77,.45);
+  color: #f0d9a8; font-family: var(--ey); font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  box-shadow: 0 8px 24px rgba(0,0,0,.45); pointer-events: none; white-space: nowrap;
+}
+.aviso-red[hidden] { display: none; }
+.aviso-red-dot { width: 7px; height: 7px; border-radius: 50%; background: #e5b04d; animation: aviso-red-pulso 1.4s ease-in-out infinite; }
+@keyframes aviso-red-pulso { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .aviso-red-dot { animation: none; } }

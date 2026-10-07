@@ -52,7 +52,8 @@ const state = {
 
 let allPedidos = [];
 let allUsers   = [];
-let allEmpresas = [];   // EMPRESAS.sql: [{ id, nombre, activa }]. Sin precios.
+let allEmpresas = [];
+let datosCargados = false;   // false hasta la primera carga con red (sin red: "Cargando…", no "vacío")   // EMPRESAS.sql: [{ id, nombre, activa }]. Sin precios.
 
 // ─── Empresas: utilidades compartidas ────────────────────────────────────────
 function nombreEmpresa(id) {
@@ -315,6 +316,7 @@ function updateSortHeaders() {
 // ─── Main render ─────────────────────────────────────────────────────────────
 async function loadAndRender() {
   [allPedidos, allUsers, allEmpresas] = await Promise.all([getPedidos(), getDbUsers(), getEmpresas()]);
+  datosCargados = true;
   populateDropdowns();
   renderAll();
 }
@@ -546,8 +548,8 @@ function renderTablero() {
   // Una partición: cada pedido cae en una sola columna.
   const porHacer    = list.filter(p => !esFinalizado(p.estado)).sort(ordenTablero);
   const finalizados = list.filter(p =>  esFinalizado(p.estado)).sort((a, b) => ordenTablero(b, a));
-  renderColumnaTablero('almacenBody', 'almacenCount', porHacer, 'Nada pendiente', almacenIds);
-  renderColumnaTablero('almacenHistBody', 'almacenHistCount', finalizados, 'Sin pedidos finalizados', almacenIds);
+  renderColumnaTablero('almacenBody', 'almacenCount', porHacer, datosCargados ? 'Nada pendiente' : 'Cargando…', almacenIds);
+  renderColumnaTablero('almacenHistBody', 'almacenHistCount', finalizados, datosCargados ? 'Sin pedidos finalizados' : 'Cargando…', almacenIds);
 
   // Filtro rápido con contadores por origen (dentro de la empresa elegida).
   const base = tableroPorEmpresa();
@@ -905,14 +907,29 @@ document.getElementById('ordersTable').addEventListener('click', e => {
   const area = document.getElementById('navUserArea');
   area.innerHTML = `
     <span class="nav-username">${escHtml(u.nombre)}</span>
-    <span class="nav-avatar cond">${u.nombre.charAt(0).toUpperCase()}</span>
-    <span class="badge-role staff">${u.role === 'almacen' ? 'Almacén' : 'Admin'}</span>
+    <span class="nav-avatar cond">${escHtml((u.nombre || '?').charAt(0).toUpperCase())}</span>
+    <span class="badge-role staff">${u.role === 'almacen' ? 'Almacén' : u.role === 'admin' ? 'Admin' : 'Taller'}</span>
     <button class="btn btn-secondary btn-sm" id="logoutBtn">Salir</button>`;
   document.getElementById('logoutBtn').addEventListener('click', logout);
 
   initCharts();
-  await loadAndRender();
-  renderUsers();
+
+  // Al volver la conexión o a primer plano: recargar pedidos, usuarios, empresas
+  // y chats sin recargar la página (auth.js ya ha comprobado la sesión).
+  alVolverALaApp(async () => {
+    await loadAndRender();
+    renderUsers();
+    await tCargarChats();
+    if (tchat.sel) {
+      try { tchat.mensajes = await getMensajesChat(tchat.sel); await tPintarMensajes(); } catch (e) { console.warn('recargar chat:', e); }
+    }
+  });
+
+  // Sin red al abrir: panel visible con el aviso; los datos llegan al reconectar.
+  if (!u.offline) {
+    await loadAndRender();
+    renderUsers();
+  }
 
   subscribePedidos(async () => {
     allPedidos = await getPedidos();

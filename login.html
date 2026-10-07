@@ -51,13 +51,13 @@
       <form id="loginForm" class="auth-form active" novalidate>
         <div class="form-group">
           <label for="loginEmail">Email</label>
-          <input type="email" id="loginEmail" placeholder="tu@email.com" required />
+          <input type="email" id="loginEmail" name="email" placeholder="tu@email.com" required autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" />
           <span class="error-msg" id="err-loginEmail"></span>
         </div>
         <div class="form-group">
           <label for="loginPassword">Contraseña</label>
           <div class="pass-wrap">
-            <input type="password" id="loginPassword" placeholder="••••••••" required />
+            <input type="password" id="loginPassword" name="password" placeholder="••••••••" required autocomplete="current-password" />
             <button type="button" class="toggle-pass" data-target="loginPassword">👁</button>
           </div>
           <span class="error-msg" id="err-loginPassword"></span>
@@ -71,7 +71,7 @@
       <form id="registerForm" class="auth-form" novalidate>
         <div class="form-group">
           <label for="regNombre">Nombre</label>
-          <input type="text" id="regNombre" placeholder="Ej: Juan García" required />
+          <input type="text" id="regNombre" name="name" placeholder="Ej: Juan García" required autocomplete="name" />
           <span class="error-msg" id="err-regNombre"></span>
         </div>
         <div class="form-group">
@@ -83,13 +83,13 @@
         </div>
         <div class="form-group">
           <label for="regEmail">Email</label>
-          <input type="email" id="regEmail" placeholder="tu@email.com" required />
+          <input type="email" id="regEmail" name="email" placeholder="tu@email.com" required autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" />
           <span class="error-msg" id="err-regEmail"></span>
         </div>
         <div class="form-group">
           <label for="regPassword">Contraseña</label>
           <div class="pass-wrap">
-            <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" required minlength="6" />
+            <input type="password" id="regPassword" name="new-password" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password" />
             <button type="button" class="toggle-pass" data-target="regPassword">👁</button>
           </div>
           <span class="error-msg" id="err-regPassword"></span>
@@ -97,7 +97,7 @@
         <div class="form-group">
           <label for="regPassword2">Confirmar contraseña</label>
           <div class="pass-wrap">
-            <input type="password" id="regPassword2" placeholder="Repite tu contraseña" required />
+            <input type="password" id="regPassword2" name="new-password-confirm" placeholder="Repite tu contraseña" required autocomplete="new-password" />
             <button type="button" class="toggle-pass" data-target="regPassword2">👁</button>
           </div>
           <span class="error-msg" id="err-regPassword2"></span>

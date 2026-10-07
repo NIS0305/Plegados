@@ -228,11 +228,22 @@ if (mApp) (async () => {
   $('mRol').textContent = currentUser.role === 'admin' ? 'ADMIN' : currentUser.role === 'almacen' ? 'ALMACÉN' : 'MONTADOR';
   // Empresa del perfil, solo lectura ("MONTADOR · <EMPRESA>"). Sin empresa no
   // se bloquea nada: sus pedidos quedan sin empresa y el taller los asigna.
-  getMiEmpresa(currentUser.id).then(nombre => {
-    if (!nombre) return;
-    $('mRol').textContent += ' · ' + nombre.toUpperCase();
-    $('mRol').title = nombre;
-  });
+  const rolBase = $('mRol').textContent;
+  function pintarEmpresa(nombre) {
+    $('mRol').textContent = nombre ? `${rolBase} · ${nombre.toUpperCase()}` : rolBase;
+    $('mRol').title = nombre || '';
+  }
+  // Sin red: la empresa cacheada de la última vez. Con red: se refresca y se cachea.
+  pintarEmpresa(currentUser.empresa);
+  function refrescarEmpresa() {
+    getMiEmpresa(currentUser.id).then(nombre => {
+      if (nombre === undefined) return;   // no se pudo leer: se queda la cacheada
+      currentUser.empresa = nombre;
+      guardarPerfilCache(currentUser);
+      pintarEmpresa(nombre);
+    });
+  }
+  if (!currentUser.offline) refrescarEmpresa();
   $('mMontadorChip').textContent = String(currentUser.nombre || '').toUpperCase();
   $('logoutBtn').addEventListener('click', logout);
   if (['admin', 'almacen'].includes(currentUser.role)) $('mDashLink').hidden = false;
@@ -944,6 +955,25 @@ if (mApp) (async () => {
   pila.push(claveRuta(ruta));
   window.addEventListener('hashchange', onHash);
   mostrar();
+
+  // Al volver la conexión o al volver a primer plano: recargar pedidos y chats
+  // sin recargar la página (auth.js ya ha comprobado la sesión).
+  alVolverALaApp(async (u) => {
+    if (u && u.nombre) currentUser.nombre = u.nombre;
+    currentUser.offline = false;
+    refrescarEmpresa();
+    await Promise.all([cargarPedidos(), cargarChats()]);
+    M.cargado = true;
+    if (ruta.vista === 'chat') {
+      if (M.chat && M.chat.chatId) {
+        try { M.chat.mensajes = await getMensajesChat(M.chat.chatId); await pintarMensajes(); } catch (e) { console.warn('recargar chat:', e); }
+      } else abrirChat();
+    } else pintar();
+  });
+
+  // Sin red al abrir: se muestra la app con el aviso; los datos llegan al reconectar
+  // (las listas dicen "Cargando…" en vez de "no tienes pedidos").
+  if (currentUser.offline) return;
   await Promise.all([cargarPedidos(), cargarChats()]);
   M.cargado = true;
   if (ruta.vista === 'chat') abrirChat(); else pintar();
