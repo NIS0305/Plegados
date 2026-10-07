@@ -91,12 +91,9 @@ function openModal(pedido) {
       <button type="button" id="genEtiquetaBtn" class="gbtn cond" data-id="${pedido.id}" data-ref="${escHtml(pedido.referencia || '')}">＋ Generar etiqueta</button>
     </div>`;
 
-  // Chat con el montador (dashboard): lo resuelve dashboard.js si existe.
-  const chatId = typeof window.chatIdDePedido === 'function' ? window.chatIdDePedido(pedido.id) : null;
-  const chatHtml = chatId ? `<div class="doc">
-      <div class="dl"><div class="di key">💬</div><div><div class="dt cond">Chat con el montador</div><div class="ds">Abierto</div></div></div>
-      <button type="button" class="obtn" data-abrir-chat="${escHtml(chatId)}">Abrir chat</button>
-    </div>` : '';
+  // Chat con el montador (dashboard): "Abrir chat", "Escribir al montador" o
+  // "sin montador con cuenta". Lo resuelve dashboard.js (htmlChatModal).
+  const chatHtml = typeof window.htmlChatModal === 'function' ? window.htmlChatModal(pedido) : '';
 
   const origen = pedido.origen === 'email' ? '<span class="tag email">Email</span>' : '';
   const row = (k, v, long) => v == null || v === '' ? '' : `<div class="row${long ? ' long' : ''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;
@@ -382,6 +379,19 @@ if (mApp) (async () => {
       : 'Sin chats abiertos';
     $('mChatsBadge').hidden = !nuevos;
     $('mChatsBadge').textContent = nuevos;
+
+    // Aviso: el taller ha escrito (p. ej. abrió él el chat). Lleva al chat más reciente con nuevos.
+    const conNuevos = M.chats.filter(c => c.noLeidosMontador > 0)
+      .sort((a, b) => new Date(b.ultimoMensajeEl) - new Date(a.ultimoMensajeEl));
+    const aviso = $('mAvisoTaller');
+    if (conNuevos.length) {
+      const c = conNuevos[0];
+      const p = pedidoDe(c.pedidoId);
+      aviso.href = `#chat/${c.pedidoId}`;
+      $('mAvisoTallerTxt').textContent = `El taller te ha escrito sobre REF ${p ? refDe(p) : c.pedidoId}`;
+      $('mAvisoTallerSub').textContent = conNuevos.length > 1 ? `Y ${conNuevos.length - 1} chat${conNuevos.length > 2 ? 's' : ''} más con mensajes nuevos` : 'Toca para abrir el chat';
+      aviso.hidden = false;
+    } else aviso.hidden = true;
   }
 
   // ── 2 · Nuevo pedido ────────────────────────────────────────────────────────
@@ -766,7 +776,8 @@ if (mApp) (async () => {
     if (!M.chat || box !== $('mMsgs')) return;
     const sep = c || M.chat.chatId
       ? (() => { const d = new Date((c && c.creadoEl) || (M.chat.mensajes[0] && M.chat.mensajes[0].creado_el) || Date.now());
-          return `<span class="m-sep">CHAT ABIERTO · ${dosDig(d.getDate())}/${dosDig(d.getMonth() + 1)} · ${horaDe(d)}</span>`; })()
+          const quien = c && c.abiertoPor === 'taller' ? 'EL TALLER ABRIÓ ESTE CHAT' : 'CHAT ABIERTO';
+          return `<span class="m-sep">${quien} · ${dosDig(d.getDate())}/${dosDig(d.getMonth() + 1)} · ${horaDe(d)}</span>`; })()
       : `<div class="m-empty">Escribe tu duda o envía una foto de la corrección. El taller la verá en su panel.</div>`;
     box.innerHTML = sep + M.chat.mensajes.map(m => htmlMensaje(m, M.chat.urls)).join('');
     pegarAbajo(box);
@@ -850,7 +861,7 @@ if (mApp) (async () => {
     try {
       if (!M.chat.chatId) {
         // Primer mensaje: se abre el chat del pedido (lo valida la RLS).
-        const nuevo = await crearChat(M.chat.pedidoId, currentUser.id);
+        const nuevo = await abrirChatPedido(M.chat.pedidoId);
         M.chat.chatId = nuevo.id;
         if (!M.chats.find(x => x.id === nuevo.id)) M.chats.unshift(nuevo);
       }

@@ -285,6 +285,8 @@ function rowToChat(c, msgs) {
     id:              c.id,
     pedidoId:        Number(c.pedido_id),
     montadorUid:     c.montador_uid,
+    abiertoPor:      c.abierto_por || 'montador',   // CHAT-TALLER-ABRE.sql
+    montadorHaEscrito: msgs.some(m => m.autor_rol === 'montador'),
     creadoEl:        c.creado_el,
     ultimoMensajeEl: c.ultimo_mensaje_el,
     ultimo:          msgs.length ? msgs[msgs.length - 1] : null,
@@ -318,11 +320,27 @@ async function getMensajesChat(chatId) {
   return data || [];
 }
 
-// Abre el chat de un pedido (solo el dueño del pedido; lo comprueba la RLS).
-// Si ya existe (unique pedido_id, p.ej. dos pestañas), devuelve el existente.
-async function crearChat(pedidoId, montadorUid) {
+// Abre (o recupera) el chat de un pedido con la RPC abrir_chat_pedido
+// (CHAT-TALLER-ABRE.sql). La BD decide: el montador solo en SUS pedidos; el
+// taller en cualquier pedido de un montador con cuenta. montador_uid y
+// abierto_por los fija la BD. Si ya existe (lo abriera quien lo abriera, o dos
+// a la vez), devuelve el mismo chat.
+async function abrirChatPedido(pedidoId) {
+  const { data, error } = await _db.rpc('abrir_chat_pedido', { p_pedido_id: pedidoId });
+  if (!error) return rowToChat(Array.isArray(data) ? data[0] : data, []);
+  // RPC aún no creada en la BD (cliente desplegado antes que el SQL): alta
+  // directa como antes (solo vale para el montador sobre su pedido).
+  if (error.code === 'PGRST202' || /abrir_chat_pedido/.test(error.message || '') && /not find|does not exist/i.test(error.message || '')) {
+    return crearChatDirecto(pedidoId);
+  }
+  if (error.code === 'P0001') throw new Error(error.message);   // "Este pedido no tiene montador con cuenta"
+  throw error;
+}
+
+async function crearChatDirecto(pedidoId) {
+  const { data: { session } } = await _db.auth.getSession();
   const { data, error } = await _db.from('chats')
-    .insert({ pedido_id: pedidoId, montador_uid: montadorUid }).select().single();
+    .insert({ pedido_id: pedidoId, montador_uid: session && session.user.id }).select().single();
   if (!error) return rowToChat(data, []);
   if (error.code === '23505') {
     const { data: ex, error: e2 } = await _db.from('chats').select('*').eq('pedido_id', pedidoId).maybeSingle();

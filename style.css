@@ -1019,3 +1019,20 @@ button.tag { border: none; cursor: pointer; font: inherit; font-family: var(--ey
 .aviso-red-dot { width: 7px; height: 7px; border-radius: 50%; background: #e5b04d; animation: aviso-red-pulso 1.4s ease-in-out infinite; }
 @keyframes aviso-red-pulso { 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) { .aviso-red-dot { animation: none; } }
+
+/* ===== Aviso en Inicio: "El taller te ha escrito sobre REF …" (CHAT-TALLER-ABRE.sql) ===== */
+.m-aviso-taller {
+  min-height: 64px; padding: 10px 14px; border-radius: 16px; background: var(--lime-08); border: 1px solid var(--lime-35);
+  color: var(--bone); display: flex; align-items: center; gap: 12px;
+}
+.m-aviso-taller[hidden] { display: none; }
+.m-aviso-taller:hover { color: var(--bone); border-color: var(--lime); }
+.m-aviso-taller-ico { width: 40px; height: 40px; flex: none; border-radius: 12px; background: var(--lime-12); display: flex; align-items: center; justify-content: center; }
+.m-aviso-taller-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.m-aviso-taller-t { font-size: 15px; font-weight: 700; line-height: 1.25; }
+.m-aviso-taller-s { font-size: 12.5px; color: var(--silver); }
+/* Tablero: chat abierto por el taller sin respuesta del montador */
+.tag.chat.espera { color: #e5b04d; border-color: rgba(229,176,77,.45); background: transparent; }
+/* Dashboard: botón deshabilitado del modal (pedido sin montador con cuenta) */
+button.obtn:disabled { opacity: .55; cursor: not-allowed; }
+.tchat-borrador { padding: 18px; border-radius: 14px; border: 1px dashed var(--line3); color: var(--silver); font-size: 14px; line-height: 1.45; text-align: center; align-self: stretch; }

@@ -9,6 +9,11 @@
 --
 --  Resultado esperado: una lista de NOTICE "OK: ..." y ningún "FALLO".
 --  Si algo falla, el script se detiene con el mensaje "FALLO: ...".
+--
+--  NOTA: abre el chat con un INSERT directo. Tras el PASO 3 de
+--  CHAT-TALLER-ABRE.sql (INSERT revocado; los chats se abren con la RPC
+--  abrir_chat_pedido) este script falla en el primer paso a propósito: usa
+--  entonces la prueba del PASO 2 de CHAT-TALLER-ABRE.sql.
 -- ============================================================================
 begin;
 

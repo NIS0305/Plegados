@@ -113,6 +113,14 @@ ejecutar en el SQL Editor, en este orden:
 Solo el taller (roles `admin` y `almacen`) puede cerrar un chat, desde la
 sección «Chats» del dashboard; al cerrarlo se borran sus mensajes e imágenes.
 
+### El taller también abre chats
+
+`CHAT-TALLER-ABRE.sql`: los chats se abren con la RPC `abrir_chat_pedido` (el
+montador en sus pedidos; el taller en cualquier pedido de un montador con
+cuenta). Ejecutar PASO 1, desplegar, y después PASO 3 (revoca el INSERT directo
+en `chats`). Desde el detalle del pedido: «Escribir al montador»; el chat se
+crea al enviar el primer mensaje.
+
 ### Empresas cliente
 
 Cada montador pertenece a una empresa (la elige al registrarse) y cada pedido

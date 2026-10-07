@@ -504,8 +504,10 @@ function filaTablero(p, almacenIds) {
         : '<span class="tag mont">Almacén</span>') +
       (empresa ? ` <span class="tag emp">${escHtml(empresa)}</span>` : ' <span class="tag sinemp" title="Asígnala en el detalle del pedido">Sin empresa</span>');
   const chat     = typeof tchat !== 'undefined' ? tchat.chats.find(c => c.pedidoId === p.id) : null;
+  // Chat abierto por el taller y el montador aún no ha respondido: "Esperando al montador".
+  const espera   = chat && chat.abiertoPor === 'taller' && !chat.montadorHaEscrito;
   const chatTag  = chat
-    ? `<button type="button" class="tag chat${chat.noLeidosTaller ? ' nuevo' : ''}" data-action="chat" data-id="${p.id}" title="${chat.noLeidosTaller ? 'Mensajes nuevos del montador' : 'Abrir chat'}">${chat.noLeidosTaller ? '<span class="tdot"></span>' : ''}Chat</button>`
+    ? `<button type="button" class="tag chat${chat.noLeidosTaller ? ' nuevo' : ''}${espera ? ' espera' : ''}" data-action="chat" data-id="${p.id}" title="${chat.noLeidosTaller ? 'Mensajes nuevos del montador' : espera ? 'El taller escribió; el montador aún no ha respondido' : 'Abrir chat'}">${chat.noLeidosTaller ? '<span class="tdot"></span>' : ''}${espera ? 'Chat · Esperando al montador' : 'Chat'}</button>`
     : '';
   const ref      = p.referencia ? escHtml(p.referencia) : `#${p.id}`;
   const meta     = [org === 'montador' ? '' : escHtml(p.montador), p.ral ? escHtml(p.ral) : '', p.cantidad != null ? `${escHtml(p.cantidad)} ${Number(p.cantidad) === 1 ? 'pza' : 'pzas'}` : '', nPlanos > 1 ? `${nPlanos} planos` : ''].filter(Boolean).join(' · ');
@@ -1105,7 +1107,9 @@ const T_ICO = {
   x:      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B7B7B6" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
 };
 
-const tChatSel   = () => tchat.chats.find(c => c.id === tchat.sel) || null;
+// tchat.sel === 'borrador': conversación nueva del taller con un montador, aún
+// sin chat en la BD (se crea al enviar el primer mensaje, para no dejar chats vacíos).
+const tChatSel   = () => tchat.sel === 'borrador' ? tchat.borrador : (tchat.chats.find(c => c.id === tchat.sel) || null);
 const tPedidoDe  = c => allPedidos.find(p => p.id === c.pedidoId) || null;
 function tRef(c) { const p = tPedidoDe(c); return p && p.referencia ? p.referencia : `#${c.pedidoId}`; }
 function tMontador(c) {
@@ -1135,11 +1139,17 @@ function tPintarLista() {
   const box = document.getElementById('tChatsList');
   if (!box) return;
   tPintarBadge();
+  const borrador = tchat.sel === 'borrador' && tchat.borrador
+    ? `<div class="tchat-item on" aria-current="true">
+        <span class="r1"><span class="ref">REF ${escHtml(tRef(tchat.borrador))}</span><span class="h">Nuevo</span></span>
+        <span class="r2">${escHtml(tMontador(tchat.borrador))} · Sin enviar</span>
+      </div>` : '';
   if (!tchat.chats.length) {
-    box.innerHTML = '<span class="ey" style="font-size:10px;color:var(--ink2)">Chats abiertos · 0</span><div class="tchats-empty">No hay chats abiertos. Los abre el montador desde el detalle de su pedido.</div>';
+    box.innerHTML = '<span class="ey" style="font-size:10px;color:var(--ink2)">Chats abiertos · 0</span>' + (borrador ||
+      '<div class="tchats-empty">No hay chats abiertos. Los abre el montador desde su pedido, o tú con «Escribir al montador» en el detalle del pedido.</div>');
     return;
   }
-  box.innerHTML = `<span class="ey" style="font-size:10px;color:var(--ink2)">Chats abiertos · ${tchat.chats.length}</span>` +
+  box.innerHTML = `<span class="ey" style="font-size:10px;color:var(--ink2)">Chats abiertos · ${tchat.chats.length}</span>` + borrador +
     tchat.chats.map(c => {
       const u = c.ultimo;
       const prev = u ? (u.imagen_path && !u.texto ? 'Imagen' : u.texto) : 'Sin mensajes';
@@ -1155,13 +1165,22 @@ function tPintarLista() {
 
 async function tCargarChats() {
   tchat.chats = await getChatsResumen();
+  if (tchat.sel === 'borrador' && tchat.borrador) {
+    // El montador abrió el chat de ese pedido mientras el taller escribía: se pasa a él sin perder el texto.
+    const real = tchat.chats.find(c => c.pedidoId === tchat.borrador.pedidoId);
+    if (real) {
+      const inp = document.getElementById('tTxt'); const txt = inp ? inp.value : '';
+      await tAbrirChat(real.id);
+      const inp2 = document.getElementById('tTxt'); if (inp2) inp2.value = txt;
+    }
+  }
   if (tchat.sel && !tChatSel()) tCerrarPanel();
   tPintarLista();
   renderTablero();   // indicador "Chat" (y punto de nuevos) en las tarjetas
 }
 
 function tCerrarPanel() {
-  tchat.sel = null; tchat.mensajes = []; tchat.confirmando = false;
+  tchat.sel = null; tchat.borrador = null; tchat.mensajes = []; tchat.confirmando = false;
   tQuitarImagen();
   const pane = document.getElementById('tChatPane');
   if (pane) pane.innerHTML = '<div class="tchat-nada">Elige un chat de la lista.</div>';
@@ -1177,7 +1196,7 @@ function tPintarPanel() {
     <div class="tchat-head">
       <span class="tt"><span class="ref">REF ${escHtml(tRef(c))}</span><span class="sub">${escHtml(resumen)}</span></span>
       <button type="button" class="tbtn" id="tVerPedido"${p ? '' : ' disabled'}>Ver pedido</button>
-      <button type="button" class="tbtn lime" id="tResuelto">${T_ICO.check} Resuelto · eliminar chat</button>
+      ${c.id ? `<button type="button" class="tbtn lime" id="tResuelto">${T_ICO.check} Resuelto · eliminar chat</button>` : ''}
     </div>
     <div class="tchat-confirm" id="tConfirm" hidden>
       <span class="q">¿Dar por resuelto el chat de <strong>REF ${escHtml(tRef(c))}</strong>? Se eliminarán los mensajes y las imágenes para el taller y para el montador. No se puede deshacer.</span>
@@ -1189,7 +1208,7 @@ function tPintarPanel() {
     <div class="tchat-composer">
       <button type="button" class="ibtn" id="tAdjuntar" aria-label="Adjuntar imagen" title="Adjuntar imagen">${T_ICO.img}</button>
       <label for="tTxt" class="m-sr">Mensaje</label>
-      <input type="text" id="tTxt" placeholder="Responder a ${escHtml(tMontador(c).split(' ')[0])}…" autocomplete="off" maxlength="4000" />
+      <input type="text" id="tTxt" placeholder="${c.id ? 'Responder' : 'Escribir'} a ${escHtml(tMontador(c).split(' ')[0])}…" autocomplete="off" maxlength="4000" />
       <button type="button" class="ibtn send" id="tEnviar" aria-label="Enviar">${T_ICO.enviar}</button>
       <input type="file" id="tFile" accept="image/*" hidden />
     </div>`;
@@ -1202,9 +1221,14 @@ async function tPintarMensajes() {
   const paths = tchat.mensajes.filter(m => m.imagen_path).map(m => m.imagen_path);
   if (paths.length) Object.assign(tchat.urls, await urlsFirmadasChat(paths));
   if (box !== document.getElementById('tMsgs')) return;
-  const ab = new Date(c.creadoEl);
   const nombre = tMontador(c);
-  box.innerHTML = `<span class="sep">CHAT ABIERTO POR ${escHtml(nombre.toUpperCase())} · ${tDos(ab.getDate())}/${tDos(ab.getMonth() + 1)} · ${tDos(ab.getHours())}:${tDos(ab.getMinutes())}</span>` +
+  if (!c.id) {
+    box.innerHTML = `<div class="tchat-borrador">Escribe el primer mensaje a <strong>${escHtml(nombre)}</strong> sobre <strong>REF ${escHtml(tRef(c))}</strong>.<br>El chat se crea al enviarlo y le aparecerá en su móvil; si no envías nada, no queda ningún chat abierto.</div>`;
+    return;
+  }
+  const ab = new Date(c.creadoEl);
+  const quien = c.abiertoPor === 'taller' ? 'TALLER' : nombre.toUpperCase();
+  box.innerHTML = `<span class="sep">CHAT ABIERTO POR ${escHtml(quien)} · ${tDos(ab.getDate())}/${tDos(ab.getMonth() + 1)} · ${tDos(ab.getHours())}:${tDos(ab.getMinutes())}</span>` +
     tchat.mensajes.map(m => {
       const mont = m.autor_rol === 'montador';
       const url = m.imagen_path ? tchat.urls[m.imagen_path] : null;
@@ -1238,6 +1262,7 @@ async function tAbrirChat(chatId) {
   if (!tchat.chats.find(c => c.id === chatId)) { showToast('Ese chat ya no existe.'); return; }
   if (tchat.sel !== chatId) { tQuitarImagen(); tchat.confirmando = false; }
   tchat.sel = chatId;
+  tchat.borrador = null;
   tchat.mensajes = [];
   tPintarLista();
   tPintarPanel();
@@ -1284,10 +1309,22 @@ async function tEnviar() {
   tchat.enviando = true;
   const btn = document.getElementById('tEnviar'); btn.disabled = true;
   try {
-    const m = await enviarMensajeChat(c.id, { texto, imagen });
+    let chatId = c.id;
+    if (!chatId) {
+      // Primer mensaje del taller: se abre el chat del pedido (la BD comprueba
+      // que es de un montador con cuenta y no duplica si ya existía).
+      const real = await abrirChatPedido(c.pedidoId);
+      chatId = real.id;
+      if (!tchat.chats.find(x => x.id === real.id)) tchat.chats.unshift(real);
+      tchat.sel = real.id;
+      tchat.borrador = null;
+      tchat.mensajes = await getMensajesChat(real.id);   // por si el montador ya había escrito
+    }
+    const m = await enviarMensajeChat(chatId, { texto, imagen });
     input.value = '';
     tQuitarImagen();
-    if (tchat.sel === c.id && !tchat.mensajes.find(x => x.id === m.id)) tchat.mensajes.push(m);
+    if (tchat.sel === chatId && !tchat.mensajes.find(x => x.id === m.id)) tchat.mensajes.push(m);
+    if (!c.id) { tPintarLista(); tPintarPanel(); }
     await tPintarMensajes();
     tRefrescar();
   } catch (err) {
@@ -1355,6 +1392,50 @@ document.getElementById('tChatPane').addEventListener('keydown', (e) => {
 document.getElementById('tVisor').addEventListener('click', () => {
   document.getElementById('tVisor').hidden = true;
   document.getElementById('tVisorImg').removeAttribute('src');
+});
+
+// Bloque "Chat" del modal de detalle (app.js → openModal):
+//   · ya hay chat → "Abrir chat"
+//   · pedido de un montador con cuenta → "Escribir al montador"
+//   · correo / almacén / sin usuario → desactivado: "Este pedido no tiene montador con cuenta"
+function esPedidoDeMontador(p) {
+  if (!p || p.origen === 'email' || !p.userId) return false;
+  const u = allUsers.find(x => x.id === p.userId);
+  return !!u && u.role === 'montador';
+}
+window.htmlChatModal = (p) => {
+  const chatId = window.chatIdDePedido(p.id);
+  const fila = (sub, boton) => `<div class="doc">
+      <div class="dl"><div class="di key">💬</div><div><div class="dt cond">Chat con el montador</div><div class="ds">${sub}</div></div></div>
+      ${boton}
+    </div>`;
+  if (chatId) return fila('Abierto', `<button type="button" class="obtn" data-abrir-chat="${escHtml(chatId)}">Abrir chat</button>`);
+  if (esPedidoDeMontador(p)) return fila('Sin chat todavía', `<button type="button" class="obtn" data-escribir-montador="${p.id}">Escribir al montador</button>`);
+  return fila('Este pedido no tiene montador con cuenta', '<button type="button" class="obtn" disabled title="Este pedido no tiene montador con cuenta">Escribir al montador</button>');
+};
+
+// "Escribir al montador": conversación vacía en la sección Chats, composer listo.
+function tEscribirAMontador(pedidoId) {
+  const existente = window.chatIdDePedido(pedidoId);
+  if (existente) return tAbrirChat(existente);
+  const p = allPedidos.find(x => x.id === Number(pedidoId));
+  if (!esPedidoDeMontador(p)) { showToast('Este pedido no tiene montador con cuenta.'); return; }
+  tQuitarImagen();
+  tchat.borrador = { id: null, pedidoId: p.id, montadorUid: p.userId, abiertoPor: 'taller', creadoEl: null, noLeidosTaller: 0 };
+  tchat.sel = 'borrador';
+  tchat.mensajes = [];
+  tPintarLista();
+  tPintarPanel();
+  tPintarMensajes();
+  const inp = document.getElementById('tTxt');
+  if (inp) inp.focus({ preventScroll: true });
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-escribir-montador]');
+  if (!b || b.disabled) return;
+  document.getElementById('modalOverlay').style.display = 'none';
+  tEscribirAMontador(Number(b.dataset.escribirMontador));
+  document.getElementById('chats').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 // "Abrir chat" desde el modal de detalle del pedido.
