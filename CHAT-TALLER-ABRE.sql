@@ -130,10 +130,10 @@ insert into auth.users (id, aud, role, email, raw_user_meta_data, created_at, up
   ('00000000-0000-4000-8000-0000000000c3', 'authenticated', 'authenticated', 'abre-t@chat.local', '{"nombre":"Taller"}', now(), now());
 update public.profiles set role = 'almacen' where id = '00000000-0000-4000-8000-0000000000c3';
 insert into public.pedidos (id, user_uid, fecha, montador, cantidad, estado, origen) values
-  (9900000000201, '00000000-0000-4000-8000-0000000000a1', '01/01/2026, 10:00', 'Montador A', 1, 'Pendiente', null),
-  (9900000000202, '00000000-0000-4000-8000-0000000000b2', '01/01/2026, 10:00', 'Montador B', 1, 'Pendiente', null),
+  (9900000000201, '00000000-0000-4000-8000-0000000000a1', '01/01/2026, 10:00', 'Montador A', 1, 'Pendiente', default),
+  (9900000000202, '00000000-0000-4000-8000-0000000000b2', '01/01/2026, 10:00', 'Montador B', 1, 'Pendiente', default),
   (9900000000203, null,                                   '01/01/2026, 10:00', 'correo@x',   1, 'Pendiente', 'email'),
-  (9900000000204, '00000000-0000-4000-8000-0000000000c3', '01/01/2026, 10:00', 'Almacén',    1, 'Pendiente', null);
+  (9900000000204, '00000000-0000-4000-8000-0000000000c3', '01/01/2026, 10:00', 'Almacén',    1, 'Pendiente', default);
 set local role authenticated;
 
 -- Taller
